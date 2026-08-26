@@ -1,0 +1,2056 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12161c">
+<title>蛊真人 · 可变全世界模拟器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { color-scheme: dark; }
+  button { touch-action: manipulation; }
+
+  html, body { height: 100%; overflow-x: hidden; }
+
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #0b0e12;
+    color: #c8cdd4;
+    display: flex;
+    flex-direction: column;
+    max-width: 760px;
+    margin: 0 auto;
+    height: 100vh;
+    height: 100dvh;   /* 手机地址栏折叠时跟随可视高度 */
+  }
+
+  /* ---------- 顶栏 ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));
+    background: #12161c;
+    border-bottom: 1px solid #2a2f38;
+    flex-wrap: wrap;
+  }
+  header .title {
+    font-weight: 700;
+    color: #e8c56a;
+    font-size: 15px;
+    margin-right: auto;
+  }
+  header .badge {
+    font-size: 12px;
+    color: #8f98a3;
+    border: 1px solid #3a4150;
+    border-radius: 4px;
+    padding: 2px 8px;
+    background: #161b22;
+  }
+  header button {
+    background: #1d242e;
+    color: #c8cdd4;
+    border: 1px solid #3a4150;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  header button:hover { border-color: #e8c56a; color: #e8c56a; }
+
+  /* ---------- 场景区 ---------- */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 12px 20px;
+    scroll-behavior: smooth;
+    overscroll-behavior-y: contain;   /* 手机滚到底不回弹 */
+  }
+  .msg {
+    margin-bottom: 18px;
+    line-height: 1.7;
+    font-size: 14.5px;
+  }
+  .msg.user {
+    text-align: right;
+  }
+  .msg.user .bubble {
+    display: inline-block;
+    background: #2a3547;
+    color: #dfe6ef;
+    padding: 8px 14px;
+    border-radius: 12px 12px 4px 12px;
+    max-width: 90%;
+    text-align: left;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg.ai {
+    background: #131820;
+    border: 1px solid #232a36;
+    border-left: 3px solid #8a6d2f;
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .msg.ai .label {
+    font-size: 11px;
+    color: #8f98a3;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .msg.ai p { margin: 0 0 8px; }
+  .msg.ai p:last-child { margin-bottom: 0; }
+  .msg.ai br { line-height: 1.8; }
+
+  .msg.error .bubble {
+    background: #3d2020;
+    color: #ffb3b3;
+  }
+
+  /* ---------- 底部操作区 ---------- */
+  footer {
+    border-top: 1px solid #2a2f38;
+    background: #0e1217;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom) + var(--kkb, 0px));   /* 底部安全区 + 软键盘高度 */
+  }
+  #actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  #actions .grp {
+    width: 100%;
+    font-size: 11px;
+    color: #b9a05c;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .act-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #f0d98a;
+    background: linear-gradient(180deg, #33290f 0%, #1e180c 55%, #151008 100%);
+    border: 1px solid #8a6d2f;
+    border-radius: 9px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    cursor: pointer;
+    text-align: left;
+    flex: 1 1 auto;
+    min-width: 40%;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6);
+    box-shadow:
+      0 1px 0 rgba(240,217,138,.18) inset,
+      0 -2px 4px rgba(0,0,0,.45) inset,
+      0 2px 6px rgba(0,0,0,.5);
+  }
+  .act-btn::before {  /* 顶部金色高光条，金属质感 */
+    content: "";
+    position: absolute;
+    top: 1px; left: 5px; right: 5px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(240,217,138,.75), transparent);
+    border-radius: 1px;
+  }
+  .act-btn .act-ic {  /* 动作图标：金色，与文字区分 */
+    color: #e8c56a;
+    font-size: 15px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,.6));
+  }
+  .act-btn:hover {
+    background: linear-gradient(180deg, #4a3d17 0%, #2a2210 60%, #1b150a 100%);
+    border-color: #c9a23e;
+    color: #ffe9a3;
+    box-shadow:
+      0 1px 0 rgba(255,233,163,.25) inset,
+      0 -2px 4px rgba(0,0,0,.45) inset,
+      0 0 10px rgba(216,184,92,.28),
+      0 2px 8px rgba(0,0,0,.55);
+  }
+  .act-btn:active {  /* 按下：内凹 + 变暗，明确点击感 */
+    transform: translateY(1px);
+    background: linear-gradient(180deg, #1b150a 0%, #2a2210 60%, #4a3d17 100%);
+    border-color: #8a6d2f;
+    box-shadow:
+      0 2px 6px rgba(0,0,0,.7) inset,
+      0 0 0 rgba(0,0,0,0);
+  }
+  .act-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  #inputBar {
+    display: flex;
+    gap: 8px;
+  }
+  #inputBar input {
+    flex: 1;
+    background: #161b22;
+    border: 1px solid #3a4150;
+    border-radius: 6px;
+    color: #c8cdd4;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  #inputBar input:focus { outline: none; border-color: #e8c56a; }
+  #inputBar button {
+    background: #8a6d2f;
+    color: #0b0e12;
+    border: none;
+    border-radius: 6px;
+    padding: 0 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #inputBar button:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ---------- 遮罩弹窗 ---------- */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 16px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    background: #141920;
+    border: 1px solid #3a4150;
+    border-radius: 10px;
+    padding: 18px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 86vh;
+    max-height: 86dvh;
+    overflow-y: auto;
+  }
+  .panel h2 { font-size: 15px; color: #e8c56a; margin-bottom: 12px; }
+  .panel label {
+    display: block;
+    font-size: 12px; color: #8f98a3;
+    margin: 10px 0 4px;
+  }
+  .panel input[type=text], .panel input[type=password], .panel textarea {
+    width: 100%;
+    background: #0e1217;
+    border: 1px solid #3a4150;
+    border-radius: 6px;
+    color: #c8cdd4;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .panel textarea { height: 140px; resize: vertical; }
+  .panel .row { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+  .panel .row button {
+    background: #1d242e; color: #c8cdd4;
+    border: 1px solid #3a4150; border-radius: 6px;
+    padding: 8px 16px; cursor: pointer; font-size: 13px;
+  }
+  .panel .row button.primary { background: #8a6d2f; color: #0b0e12; border-color: #8a6d2f; font-weight: 600; }
+  .panel .hint { font-size: 11px; color: #7a828d; margin-top: 6px; line-height: 1.6; }
+  .check { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 13px; color: #c8cdd4; }
+
+  /* ---------- 角色卡面板 ---------- */
+  #charPanel {
+    background: #12161c;
+    border-bottom: 1px solid #2a2f38;
+    padding: 10px 14px;
+    font-size: 13px;
+    flex: none;
+  }
+  .cp-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .cp-row + .cp-row { margin-top: 7px; }
+  .cp-name { color: #e8c56a; font-weight: 700; font-size: 14px; }
+  .cp-tag {
+    background: #1d242e; border: 1px solid #3a4150; border-radius: 4px;
+    padding: 1px 8px; color: #8f98a3; font-size: 12px;
+  }
+  .cp-spacer { flex: 1; }
+  .cp-item { color: #8f98a3; min-width: 0; }
+  .cp-item span { color: #c8cdd4; }
+  .cp-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 34%; }
+  .cp-bar-wrap { flex: 1; min-width: 170px; }
+  .cp-bar-label { font-size: 11px; color: #8f98a3; }
+  .cp-bar {
+    height: 6px; background: #0b0e12; border: 1px solid #2a2f38;
+    border-radius: 3px; overflow: hidden; margin-top: 3px;
+  }
+  .cp-bar-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #8a6d2f, #e8c56a);
+    transition: width .4s ease;
+  }
+  .cp-bar.qi { border-color: #4a2020; }
+  .cp-bar-fill.qi { background: linear-gradient(90deg, #8a1f1f, #e85656); }
+  .cp-empty { opacity: .45; }
+
+  /* ---------- 名片化补充 ---------- */
+  #charPanel { position: relative; cursor: pointer; }
+  .cp-avatar { font-size: 26px; line-height: 1; }
+  .cp-id { display: flex; flex-direction: column; gap: 2px; }
+  .cp-hint { font-size: 10px; color: #5a6270; text-align: right; margin-top: 2px; user-select: none; }
+
+  /* 真元变化飘字 */
+  .float-num {
+    position: absolute; top: -4px; right: 14px;
+    font-weight: 700; font-size: 16px; pointer-events: none; z-index: 5;
+    animation: floatUp 1.1s ease-out forwards;
+  }
+  .float-num.up { color: #6dd3a8; }
+  .float-num.down { color: #e06c6c; }
+  @keyframes floatUp {
+    0%   { opacity: 0; transform: translateY(6px); }
+    20%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-24px); }
+  }
+
+  /* ---------- 观感：入场动画 / 屏幕震动 / 资源高亮 ---------- */
+  /* 仅新追加的消息播放入场，历史回放不加 .enter 不闪 */
+  .msg.enter { animation: msgIn .3s ease-out both; }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* 战斗 / 受伤时的轻屏幕震动 */
+  body.shake { animation: shake .3s linear; }
+  @keyframes shake {
+    0%, 100% { transform: translate(0, 0); }
+    25%  { transform: translate(-3px, 1px); }
+    50%  { transform: translate(3px, -1px); }
+    75%  { transform: translate(-2px, 0); }
+  }
+  /* 资源增减高亮：获得绿闪、损失红闪 */
+  .flash-up { animation: flashOk 1.2s ease-out; }
+  .flash-down { animation: flashBad 1.2s ease-out; }
+  @keyframes flashOk {
+    0%, 100% { color: inherit; }
+    30% { color: #6dd3a8; text-shadow: 0 0 6px rgba(109,211,168,.8); }
+  }
+  @keyframes flashBad {
+    0%, 100% { color: inherit; }
+    30% { color: #e06c6c; text-shadow: 0 0 6px rgba(224,108,108,.8); }
+  }
+  /* 行动按钮点击闪击（攻击感） */
+  .act-btn.flash, .ref-btn.flash { animation: btnFlash .22s ease-out; }
+  @keyframes btnFlash {
+    0% { box-shadow: 0 0 0 rgba(255,255,255,0); }
+    40% { box-shadow: 0 0 0 4px rgba(255,233,163,.9); border-color: #fff2c0; }
+    100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+  }
+
+  /* 去过的地方轨迹 */
+  #trail {
+    display: flex; gap: 6px; overflow-x: auto;
+    padding: 6px 12px; border-bottom: 1px solid #232a36;
+    background: #0f141a; font-size: 12px; flex: none;
+  }
+  .trail-title { color: #8f98a3; white-space: nowrap; line-height: 24px; }
+  .trail-chip {
+    background: #161b22; border: 1px solid #2a2f38; border-radius: 12px;
+    padding: 3px 10px; cursor: pointer; white-space: nowrap; color: #a8b3c0;
+  }
+  .trail-chip:hover { border-color: #e8c56a; color: #e8c56a; }
+
+  /* 随身物品栏 */
+  #hand { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px; }
+  .hand-title { font-size: 11px; color: #8f98a3; line-height: 30px; white-space: nowrap; }
+  .hand-card {
+    background: #161b22; border: 1px solid #3a4150; border-radius: 8px;
+    padding: 6px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; flex: none;
+  }
+  .hand-card:hover { border-color: #e8c56a; color: #e8c56a; }
+  .hand-gu { color: #a8c8e0; }
+  .hand-mat { color: #d8b85c; }
+  .hand-empty { font-size: 12px; color: #5a6270; line-height: 30px; }
+
+  /* 回合变化色块 / 当前局面列表（嵌在场景流正文里） */
+  .chg-card {
+    border: 1px solid #2a2f38; border-radius: 8px;
+    padding: 8px 10px; margin: 10px 0; background: #10151b;
+  }
+  .chg-item { padding: 2px 0; font-size: 13px; }
+  .chg-item.gain { color: #7dd3a8; }
+  .chg-item.loss { color: #e06c6c; }
+  .chg-item.info { color: #7cb8e6; }
+  .chg-item.warn { color: #d8b85c; }
+  .chg-item.rel  { color: #c99be8; }
+  .chg-item.other { color: #c8cdd4; }
+
+  .sit-card {
+    border-left: 3px solid #8a6d2f; background: #141a22;
+    border-radius: 6px; padding: 8px 12px; margin: 10px 0;
+  }
+  .sit-title { font-size: 11px; color: #8f98a3; letter-spacing: 1px; margin-bottom: 4px; }
+  .sit-item { font-size: 13.5px; padding: 2px 0; }
+
+  /* 参考行动：可点击选项卡（点一下直接作为行动发送） */
+  .ref-card {
+    border-left: 3px solid #b9a05c; background: #141a22;
+    border-radius: 6px; padding: 10px 12px; margin: 10px 0;
+  }
+  .ref-title { font-size: 11px; color: #b9a05c; letter-spacing: 1px; margin-bottom: 8px; }
+  .ref-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ref-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(180deg, #2b2413 0%, #1b160c 60%, #141008 100%);
+    border: 1px solid #6f5a26; border-radius: 8px;
+    color: #e8c56a; font-size: 13px; font-weight: 600; letter-spacing: .3px;
+    padding: 8px 12px; cursor: pointer; text-align: left;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6);
+    box-shadow: 0 1px 0 rgba(240,217,138,.15) inset, 0 -2px 4px rgba(0,0,0,.4) inset, 0 2px 5px rgba(0,0,0,.5);
+  }
+  .ref-btn .ref-ic { font-size: 14px; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); }
+  .ref-btn:hover {
+    background: linear-gradient(180deg, #42360f 0%, #2b2413 60%, #1b160c 100%);
+    border-color: #c9a23e; color: #ffe9a3;
+    box-shadow: 0 1px 0 rgba(255,233,163,.2) inset, 0 0 10px rgba(216,184,92,.25), 0 2px 6px rgba(0,0,0,.55);
+  }
+  .ref-btn:active { transform: translateY(1px); }
+  .ref-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* 详情弹层条目 */
+  #detailBody { font-size: 13.5px; line-height: 1.8; }
+  #detailBody .d-row { display: flex; gap: 8px; padding: 3px 0; border-bottom: 1px dashed #2a2f38; }
+  #detailBody .d-row:last-child { border-bottom: none; }
+  #detailBody .d-k { color: #8f98a3; flex: none; width: 72px; }
+  #detailBody .d-v { color: #dfe6ef; word-break: break-word; }
+
+  /* ============================================================
+     开局向导
+     ============================================================ */
+  .wizard-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.72);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    padding: 14px;
+  }
+  .wizard-overlay.show { display: flex; }
+  .wizard {
+    background: #12161c;
+    border: 1px solid #3a4150;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 620px;
+    max-height: 92vh;
+    max-height: 92dvh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,.6);
+  }
+  .wiz-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #2a2f38;
+  }
+  .wiz-title { font-size: 15px; font-weight: 700; color: #e8c56a; }
+  .wiz-close {
+    background: transparent; border: none; color: #8f98a3;
+    font-size: 15px; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+  }
+  .wiz-close:hover { color: #e8c56a; background: #1d242e; }
+
+  .wiz-progress { display: flex; gap: 6px; padding: 10px 16px 0; }
+  .wiz-dot {
+    width: 22px; height: 3px; border-radius: 2px;
+    background: #2a2f38; transition: background .2s;
+  }
+  .wiz-dot.on { background: #e8c56a; }
+
+  .wiz-body {
+    padding: 12px 16px 16px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .wiz-step-title { font-size: 13px; color: #c8cdd4; margin-bottom: 12px; }
+  .wiz-step-title .sub { color: #7a828d; font-size: 11px; }
+
+  .wiz-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+  .wiz-grp { font-size: 11px; color: #b9a05c; letter-spacing: 1px; margin: 12px 0 6px; }
+
+  .wiz-card {
+    position: relative;
+    background: #161b22;
+    border: 1px solid #2a2f38;
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #c8cdd4;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    display: flex; flex-direction: column; gap: 4px;
+    transition: transform .08s, border-color .15s, box-shadow .15s, background .15s;
+  }
+  .wiz-card:hover { border-color: #8a6d2f; }
+  .wiz-card:active { transform: translateY(1px); }
+  .wiz-card.selected {
+    border-color: #e8c56a;
+    background: linear-gradient(180deg, #2a2210 0%, #1b150a 100%);
+    box-shadow: 0 0 12px rgba(216,184,92,.25);
+  }
+  .wiz-card .wc-top { display: flex; align-items: center; gap: 7px; }
+  .wiz-card .wc-ic { font-size: 16px; line-height: 1; }
+  .wiz-card .wc-name { font-weight: 700; color: #dfe6ef; flex: 1; }
+  .wiz-card .wc-tag {
+    font-size: 10px; color: #8f98a3; background: #1d242e;
+    border: 1px solid #3a4150; border-radius: 4px; padding: 0 6px; white-space: nowrap;
+  }
+  .wiz-card .wc-check {
+    opacity: 0; font-size: 14px; color: #e8c56a;
+    transition: opacity .15s;
+  }
+  .wiz-card.selected .wc-check { opacity: 1; }
+  .wiz-card .wc-desc { font-size: 12px; color: #8f98a3; line-height: 1.5; }
+  .wiz-card .wc-goal { font-size: 12px; color: #b9a05c; }
+
+  .wiz-custom {
+    background: #10151b; border: 1px solid #2a2f38; border-radius: 10px;
+    padding: 12px; margin-bottom: 12px;
+  }
+  .wiz-custom .wc-label {
+    display: block; font-size: 11px; color: #8f98a3; margin: 8px 0 4px;
+  }
+  .wiz-custom .wc-label:first-child { margin-top: 0; }
+  .wiz-custom input {
+    width: 100%; background: #0e1217; border: 1px solid #3a4150; border-radius: 6px;
+    color: #c8cdd4; padding: 7px 10px; font-size: 13px;
+  }
+  .wiz-custom input:focus { outline: none; border-color: #e8c56a; }
+
+  .wiz-foot {
+    display: flex; gap: 10px; justify-content: flex-end;
+    padding: 12px 16px; border-top: 1px solid #2a2f38;
+    background: #0e1217; border-radius: 0 0 12px 12px;
+  }
+  .wiz-btn {
+    background: #1d242e; color: #c8cdd4; border: 1px solid #3a4150; border-radius: 6px;
+    padding: 8px 18px; font-size: 13px; cursor: pointer; transition: border-color .15s, color .15s;
+  }
+  .wiz-btn:hover { border-color: #8a6d2f; color: #e8c56a; }
+  .wiz-btn.primary {
+    background: #8a6d2f; color: #0b0e12; border-color: #8a6d2f; font-weight: 600;
+  }
+  .wiz-btn.primary:hover { background: #a3803a; color: #0b0e12; }
+  .wiz-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ---------- 点击反馈 + 移动端适配 ---------- */
+  body { -webkit-tap-highlight-color: transparent; }
+  .act-btn { transition: transform .06s, border-color .15s, box-shadow .15s, background .15s; }
+
+  /* ---------- 移动端主布局（≤760px：竖屏/横屏手机、窄平板） ---------- */
+  @media (max-width: 760px) {
+    /* 弹层跟随软键盘收缩，底部按钮仍可及 */
+    .panel { max-height: calc(86dvh - var(--kkb, 0px)); }
+    .wizard { max-height: calc(92dvh - var(--kkb, 0px)); }
+
+    /* header 两行：第一行标题+badge，第二行 5 按钮等分满宽 */
+    .hdr-top { display: flex; flex: 1 1 100%; align-items: center; gap: 8px; margin-right: auto; }
+    header { gap: 6px; }
+    header .title { font-size: 14px; }
+    header .badge { font-size: 11px; }
+    header button {
+      flex: 1 1 0;
+      min-height: 40px;
+      padding: 8px 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    /* 触摸目标 ≥40px + 按压反馈（手机上无 hover） */
+    .trail-chip { min-height: 36px; display: inline-flex; align-items: center; padding: 6px 12px; }
+    .hand-card { min-height: 40px; display: inline-flex; align-items: center; }
+    .ref-btn { min-height: 40px; padding: 8px 12px; font-size: 14px; }
+    .wiz-btn { min-height: 44px; padding: 10px 16px; }
+    .panel .row button { min-height: 44px; padding: 10px 18px; }
+    .act-btn { min-height: 44px; }
+    .wiz-close { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+    #inputBar input, #inputBar button { min-height: 44px; }
+    #inputBar button { padding: 0 16px; }
+    header button:active, .trail-chip:active, .hand-card:active, .wiz-close:active,
+    .panel .row button:active, .wiz-btn:active, .ref-btn:active {
+      filter: brightness(1.35);
+      transform: translateY(1px);
+    }
+
+    /* 输入字号 ≥16px：防 iOS 聚焦自动放大 */
+    #inputBar input { font-size: 16px; min-width: 0; }
+    #inputBar button { font-size: 16px; }
+    .panel input[type=text], .panel input[type=password], .panel textarea { font-size: 16px; }
+    .wiz-custom input { font-size: 16px; }
+
+    /* 角色面板精简：血条整行、长蛊虫整行换行 */
+    #charPanel { padding: 8px 12px; }
+    .cp-row + .cp-row { margin-top: 5px; }
+    .cp-bar-wrap { flex: 1 1 100%; min-width: 0; }
+    .cp-ellipsis { max-width: 100%; }
+
+    /* 小字可读性 +1px */
+    .msg { font-size: 15.5px; line-height: 1.75; }
+    .sit-item { font-size: 14px; }
+    .chg-item { font-size: 14px; }
+    .cp-hint { font-size: 11px; }
+    .cp-bar-label { font-size: 12px; }
+    .panel .hint { font-size: 12px; }
+    .wiz-grp { font-size: 12px; }
+    .hand-title { font-size: 12px; }
+    .wc-tag { font-size: 11px; }
+    .wc-desc, .wc-goal { font-size: 12.5px; }
+
+    /* 横滑条隐藏（保留触摸横滑） */
+    #trail, #hand { scrollbar-width: none; }
+    #trail::-webkit-scrollbar, #hand::-webkit-scrollbar { display: none; }
+
+    /* wizard 底栏吸底 */
+    .wiz-foot { position: sticky; bottom: 0; z-index: 1; }
+  }
+
+  @media (max-width: 480px) {
+    .wizard { max-height: 94vh; max-height: 94dvh; max-height: calc(94dvh - var(--kkb, 0px)); }
+    .wiz-body { padding: 10px 12px 14px; }
+    .wiz-grid { grid-template-columns: 1fr; gap: 8px; }
+    .wiz-card { padding: 9px 11px; }
+    #actions .act-btn { min-width: 48%; flex: 1 1 46%; }
+    .cp-row { gap: 6px; }
+    .cp-ellipsis { max-width: 60%; }
+    #inputBar button { padding: 0 12px; }
+    .panel { padding: 14px; max-height: 88vh; max-height: 88dvh; max-height: calc(88dvh - var(--kkb, 0px)); }
+    header { gap: 4px; }
+    header button { padding: 8px 2px; font-size: 11px; }
+    #importText { height: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-top">
+    <span class="title">蛊真人 · 可变全世界模拟器</span>
+    <span class="badge" id="phaseBadge">开局</span>
+  </div>
+  <button id="btnSound" title="开关音效">🔊</button>
+  <button id="btnSettings">设置</button>
+  <button id="btnNew">新开局</button>
+  <button id="btnExport">导出存档</button>
+  <button id="btnImport">导入存档</button>
+</header>
+
+<!-- 角色名片（由 AI 每回合输出的【状态快照】驱动；点击看完整状态） -->
+<div id="charPanel" class="cp-empty" title="点击查看完整状态">
+  <div class="cp-row cp-top">
+    <span class="cp-avatar">🧬</span>
+    <div class="cp-id">
+      <span class="cp-name" id="cpName">—</span>
+      <span class="cp-tag" id="cpIdentity">未开局</span>
+    </div>
+    <span class="cp-spacer"></span>
+    <span class="cp-item">🏞 <span id="cpLocation">—</span></span>
+    <span class="cp-item">⏳ <span id="cpTime">—</span></span>
+  </div>
+  <div class="cp-row">
+    <span class="cp-item">🗡 修为：<span id="cpRealm">—</span></span>
+    <div class="cp-bar-wrap">
+      <span class="cp-bar-label">真元 <span id="cpZYText">—</span></span>
+      <div class="cp-bar"><div class="cp-bar-fill" id="cpZYFill"></div></div>
+    </div>
+  </div>
+  <div class="cp-row">
+    <div class="cp-bar-wrap">
+      <span class="cp-bar-label">气血 <span id="cpQIText">—</span></span>
+      <div class="cp-bar qi"><div class="cp-bar-fill qi" id="cpQIFill"></div></div>
+    </div>
+  </div>
+  <div class="cp-row cp-bottom">
+    <span class="cp-item">💎 元石：<span id="cpYuan">—</span></span>
+    <span class="cp-item cp-ellipsis">🐛 蛊虫：<span id="cpGu">—</span></span>
+    <span class="cp-item">🩹 伤势：<span id="cpWound">—</span></span>
+    <span class="cp-item cp-ellipsis">🧰 材料：<span id="cpMat">—</span></span>
+    <span class="cp-item">📛 <span id="cpFame">—</span></span>
+  </div>
+  <div class="cp-hint">点击查看完整状态 ▾</div>
+</div>
+
+<!-- 去过的地方轨迹（本地累积，点击可作行动"前往"） -->
+<div id="trail"></div>
+
+<main id="scene"></main>
+
+<footer>
+  <div id="hand"></div>
+  <div id="actions"></div>
+  <div id="inputBar">
+    <input id="freeInput" type="text" placeholder="也可以直接做任何你想做的事…" autocomplete="off" enterkeyhint="send" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button id="btnSend">发送</button>
+  </div>
+</footer>
+
+<!-- 设置面板 -->
+<div class="overlay" id="settingsOverlay">
+  <div class="panel">
+    <h2>⚙ 设置（只存在本机浏览器，不外传）</h2>
+    <label>API 地址</label>
+    <input type="text" id="cfgBase" placeholder="https://api.deepseek.com">
+    <label>API Key</label>
+    <input type="password" id="cfgKey" placeholder="sk-...">
+    <label>模型名</label>
+    <input type="text" id="cfgModel" placeholder="deepseek-chat">
+    <div class="check"><input type="checkbox" id="cfgStream" checked> 流式输出（逐字显示，更顺滑）</div>
+    <div class="hint">默认填的是 DeepSeek（国内方便、便宜）。想换别的模型，改成对应地址和模型名即可。</div>
+    <div class="row">
+      <button id="cfgCancel">取消</button>
+      <button class="primary" id="cfgSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 导入存档面板 -->
+<div class="overlay" id="importOverlay">
+  <div class="panel">
+    <h2>📥 导入存档继续玩</h2>
+    <label>粘贴存档内容（游戏内发【保存】得到的文本）</label>
+    <textarea id="importText" placeholder="【蛊世界存档 V2】..."></textarea>
+    <div class="hint">粘贴后点继续，模拟器会读取存档、不补资源、不清伤、不复活死人，从存档的真实状态接着玩。</div>
+    <div class="row">
+      <button id="impCancel">取消</button>
+      <button class="primary" id="impGo">继续</button>
+    </div>
+  </div>
+</div>
+
+<!-- 详情弹层（本地账本渲染，0 延迟） -->
+<div class="overlay" id="detailOverlay">
+  <div class="panel">
+    <h2 id="detailTitle">🧬 状态详情</h2>
+    <div id="detailBody"></div>
+    <div class="row">
+      <button id="detailClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 开局向导（全屏三步：模式 → 时间点 → 身份） -->
+<div class="wizard-overlay" id="wizardOverlay">
+  <div class="wizard">
+    <div class="wiz-head">
+      <span class="wiz-title">🧭 开局向导</span>
+      <button class="wiz-close" id="wizClose" title="关闭">✕</button>
+    </div>
+    <div class="wiz-progress" id="wizProgress">
+      <span class="wiz-dot on"></span><span class="wiz-dot"></span><span class="wiz-dot"></span>
+    </div>
+    <div class="wiz-body" id="wizBody"></div>
+    <div class="wiz-foot">
+      <button class="wiz-btn" id="wizPrev" style="display:none">上一步</button>
+      <button class="wiz-btn primary" id="wizNext">下一步</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 系统提示词（完整版，来自 docs/02） ============ -->
+<script type="text/plain" id="systemPromptSource">
+# 蛊真人 / 大爱仙尊 · 可变全世界模拟器 V2
+
+## 你的身份
+
+你现在负责运行一个可变全世界模拟器。
+这不是普通问答，不是固定剧情续写，也不是只有几个按钮的互动小说。
+
+你的职责是同时承担：
+【世界运行器 + NPC 调度器 + 因果裁判 + 状态记忆 + 原著历史基线】
+
+玩家要像一个真实存在的人进入蛊世界。
+玩家能决定自己尝试什么，但不能直接宣布结果。
+人物会自己行动，资源会流转，组织有自己的利益，伤势与代价会留下。
+玩家改变关键条件后，未来必须重新推演。
+
+收到本设定后：不要总结设定；不要解释后台规则；不要展示隐藏推理；不要直接开始长篇剧情；第一条只输出【体验模式选择】；若玩家一次性给出完整开局选择（模式+时间点+身份），跳过逐项确认，直接开始游戏；正文使用自然中文和手机友好短段落；不复制原著大段正文；不精确模仿原作者独特文风。
+
+## 最高规则
+
+1. **玩家只有行动权，没有结果权**。"我杀了他""我拿到酒虫""我让他相信我""我炼成仙蛊"都只是行动目标。结果必须结合：身份、修为、蛊虫、真元/仙元、身体、伤势、情报、资源、时间、地点、权限、NPC 反应、第三方和环境真实结算
+2. **已经发生的事情必须留下**。持续维护：时间、地点、身体、伤势、修为、空窍/仙窍、真元/仙元、元石/仙元石、蛊虫、材料、关键物品、身份、名声、关系、债务、承诺、秘密、知识、通缉、事件后果。花掉的资源不能换场景后回来；失去的蛊不能自动复活；死人不能为了名场面重新出现；伤势不能无原因消失
+3. **原著未来不是轨道**。玩家进入前已经发生的原著历史可以作为世界初态。玩家进入后，只要真实改变了未来事件依赖的关键前提（人物生死、蛊虫归属、资源、证据、秘密暴露、组织判断、时间窗口、福地控制、世界规则等），相关未来必须【继续 / 延迟 / 失效 / 改写】四选一重新结算。禁止"剧情修正力"
+4. **模型知道 ≠ 角色知道**。严格区分：世界真实事实 / 玩家现实中知道的原著 / 玩家角色真正知道的内容 / NPC 知道的内容 / 传闻、谎言、误判 / 模型为补足细节做的推断。玩家可以利用原著知识提前布局，但角色必须通过现实行动把知识变成线索、证据、资源或机会
+5. **NPC 不会等玩家**。只有进入当前因果范围的重要人物做高精度推进，远处人物做低频后台推进。重要 NPC 至少维护：当前目标、长期利益、知道什么、不知道什么、错误判断、资源、权限、正在做什么、合作门槛、退出门槛。NPC 可以撒谎、试探、误判、拒绝、反悔、逃跑、合作、背叛。NPC 不读心。一次谈话不能永久改写人格
+
+## 蛊世界底层
+
+世界由五域两天及高层空间组成。
+
+**五域**：
+- 【南疆】山地，家族与超级家族结构突出
+- 【中洲】门派体系成熟，十大古派与天庭影响深
+- 【北原】草原、部族、黄金血脉、王庭与长生天历史影响深
+- 【东海】海域辽阔，岛屿、散修与超级势力并存
+- 【西漠】绿洲与商路重要，资源稀缺使交易、妥协和争夺并存
+
+**空间**：白天、黑天、福地、洞天、天地秘境等。五域界壁以及后期大时代状态必须按当前时间点运行，不能拿后期地图污染早期世界。
+
+## 修炼与资源
+
+- 凡人蛊师一至五转，每转仍有内部阶段。资质影响修行效率和元海底盘，但不等于资源自动到账
+- 蛊仙六至九转，拥有：仙窍、道痕、仙元、仙蛊、灾劫、资源生产与寿命压力
+- 真正战力不能只比较"几转"：至少考虑修为、真元/仙元、蛊虫与蛊组、杀招、道痕、流派境界、身体与伤势、情报、地形、先手、第三方、组织支持、撤退路线、战斗目的
+- 每只重要蛊都必须经过真实链条：【存在】→【接近】→【取得】→【炼化/控制】→【喂养/维护】→【催动】→【组合/升炼】→【损毁/转移】。知道某只蛊存在 ≠ 拥有；找到 ≠ 炼化；炼化 ≠ 永久免费使用
+- 仙蛊、仙材、寿蛊、福地、洞天、资源点、蛊方、真传、境界和情报都属于高阶战略资源
+- 仙窍不是无限背包。内部的生态、人口、时间流速、资源点、生产和灾劫会继续运行
+- 交易按「需求 → 找货 → 联系 → 条件 → 成交 → 交割 → 暴露/信用后果」运行。看到宝黄天商品不等于已经买到
+- 战斗胜利不只有杀死敌人：逃脱、击退、拖延、保住资源、夺取位置、骗出底牌、完成任务、阻止炼蛊、活下来。战后必须落账：伤势、真元/仙元、蛊虫状态、材料、暴露、目击者、名声、追索、战利品归属
+- 调查/试探不能直接公布真相，结果可以是：证据、可信信号、对方谎言、误导、错误判断、没有发现
+
+## 关键能力防错
+
+- **春秋蝉**：方源的本命蛊，前世六转时自爆逆转光阴重生。不是无限读档按钮，需真实持有、使用条件、代价和成功结算
+- **定仙游**：知道存在不等于能瞬移，必须真实持有并满足使用条件
+- **第二空窍蛊**：进入三王山不等于自动得到；炼制涉及神游蛊、星火蛊、雪原蛊等【星火/雪原作用未知】
+- **智慧蛊**：可显著帮助思考，不等于自动获得正确答案；星宿仙尊执掌
+- **至尊仙胎蛊**：幽魂魔尊前世已炼成九转版并借此渗透天庭；不能自动炼成，也不能因玩家"知道剧情"就直接归玩家
+- **宿命蛊**：星宿仙尊执掌，是世界规则级关键载体，不是普通 Boss 血条，任何状态改变必须有世界级结算
+- 其他关键蛊、杀招、传承：细节不确定，保持【未知】，不凭模糊记忆编造精确答案
+
+## 组织与人物
+
+任何组织都不是一个脑子。写"某组织决定做某事"前，必须存在：谁决策、谁知道、资源在哪、谁执行、命令怎么传、是否真正实施、结果如何反馈。只有计划，没有执行载体，不算世界已经改变。
+
+重要人物按当前时间点行动，不能拿后期状态覆盖早期状态：
+- **方源**：核心目标是永生。重信息、资源、时机与长期收益。五百年经历是一份会折旧的情报资产，不是无限正确攻略。玩家不扮演他时，他也会自己行动
+- **方正**：早期受兄长阴影、资质和组织塑形影响，变化需要过程
+- **白凝冰**：高天赋、高独立性。不是固定 Boss、固定队友或奖励 NPC
+- **商心慈**：关系必须由真实相遇和共同经历形成，不能自动继承原著好感
+- **黑楼兰**：有自己的家族历史、目标和利益。合作不等于服从
+- **太白云生**：人情、救助、价值排序会真实影响选择
+- **凤九歌 / 凤金煌 / 赵怜云**：个人、家庭、门派和时代关系分开运行
+- **影无邪 / 紫山真君 / 紫薇仙子 / 龙公 / 武庸**：按当前时间点的身份、知识、资源和组织关系行动
+
+组织锚点（按时间点生效，不能拿后期状态覆盖早期）：
+- **天庭**：元始仙尊创建，天下第一蛊仙势力，统辖十大古派；高层如龙公（异人龙人）、紫薇仙子按时间点行动
+- **影宗**：幽魂魔尊幕后经营，曾暗中掌控天庭；紫山真君为高层
+- **琅琊**：源自长毛老祖（炼道无上大宗师、"古往炼道第一仙"，本体毛民），其仙窍化作琅琊福地，地灵镇守
+- **僵盟**：仙僵群体组织，焚天魔女等仙僵按各自目标行动，不是铁板一块
+
+尊者也不是无限权限：仙元、伤势、九转蛊、材料、炼蛊产能、情报、组织和时机仍然形成约束。
+历史上有十位先于方源成尊的尊者（详见 00），其中九位已明确，第十位身份未明，保持【未知】。
+
+## 六大世界阶段
+
+- **V1 青茅山**：开窍、学堂、酒虫、花酒遗藏、家庭遗产、商队调查、三寨狼潮、白凝冰、青茅山深层危机。关键条件被改变，青茅山甚至可能不按原著方式结束
+- **V2 南疆出山**：黄龙江、白骨山、商队、商心慈、商家城、演武、三王山、福地与炼蛊。没有真实获得跨域手段，就不能自动跳到后续原著位置
+- **V3 北原王庭**：跨域后勤、身份伪装、部族关系、狼群奴道、联盟战争、王庭、真阳楼与巨阳相关规则。骗过普通社会身份识别，不代表骗过所有高层识别手段
+- **V4 仙僵经营**：仙僵身体、仙窍生产、仙元现金流、宝黄天、仙蛊喂养、僵盟、拍卖、梦境、义天山、影宗与天庭多层棋盘。高阶力量仍然要算账
+- **V5 宿命与五域**：至尊仙窍、灾劫、天意与先知折损、逆流河、南疆、影宗残部、光阴长河、红莲相关线索、五域势力碰撞、宿命大战与大时代变化。世界规则级变化必须经过真实结算，不能因为"原著到了这里"自动发生
+- **V6 尊者竞争**：疯魔窟余波、尊者恢复、方源/星宿/巨阳等高层竞争、九转炼蛊、自然道痕、两天洞天、组织与情报战争
+
+**原作未完**。到现有原著文本边界后，必须自动切换为【平行世界继续模拟】。可以继续玩，但不得宣称后续是官方结局。
+
+## 体验模式
+
+你的第一条回复只显示：
+
+```
+🌙 蛊世界
+这一次，原著只是过去。
+你真正做过的事，会留下来。
+
+🟢【1｜休闲】
+机会密度最高，反馈最快，几乎不吃亏。适合想轻松体验剧情。
+
+🟢【2｜爽玩 · 推荐】
+机会密度更高，反馈更快，少走无意义弯路。
+聪明计划会得到真实奖励，但不会白送关键资源，也不会让 NPC 无脑服从。
+
+🔵【3｜沉浸】
+机会、资源、关系和风险按照当前世界自然发展。
+
+🔴【4｜硬核】
+身份、信息、时间、资源、伤势、组织权限与修炼成本更加严格。
+世界不会主动照顾玩家。
+
+🟥【5｜至暗】
+在硬核之上：死亡、损失、背叛是常态。
+一个错误决定可能终结这段人生，真实代价全程兑现。
+
+回复 1 / 2 / 3 / 4 / 5。
+如果玩家回复"开始""默认""随便""你选"，默认选择【爽玩】。
+```
+
+第一条到这里停止。
+
+## 进入世界
+
+玩家选完模式后，再让玩家选择时间点：
+
+【凡人/早期】1. 青茅山·开窍前夜　2. 开窍大典　3. 酒虫与花酒遗藏阶段　4. 狼潮与三寨阶段
+【南疆出山】5. 离山/黄龙江/白骨山　6. 商队与商家城　7. 三王山传承
+【北原】8. 北原身份落地　9. 王庭之争/八十八角真阳楼
+【蛊仙阶段】10. 仙僵经营/宝黄天/僵盟　11. 梦境/义天山多层棋盘　12. 至尊仙窍早期　13. 逆流河与后续五域追逐　14. 宿命大战前夕
+【尊者阶段】15. 疯魔窟后/尊者三方竞争　16. 自定义合理时间点
+
+然后根据该时间点给出 5 个合理身份，外加【自定义】。
+
+身份可以包括：方源；当时真实存在的原著人物；家族/部族/门派成员；普通蛊师；凡人；商人；散修/魔修；蛊仙；组织外围成员；完全原创角色。
+
+原创角色只询问最少必要信息：姓名或代号、年龄、身份背景、一个主要目标。玩家说"随机"，立即生成，不继续盘问。若玩家已一次性给出模式+时间点+身份（含自定义表单或随机身份），不再重复询问，直接按所选内容开始第一回合。
+
+默认原创角色：没有系统、没有额外外挂、没有凭空现代装备、没有后台全知、没有主角光环。
+
+## 每回合怎么写
+
+先在后台完成现实结算，再写玩家能看到的内容。
+
+①【场景正文】3—8 个短段落。动作、人物、环境和对白优先。只写角色能够感知的东西。
+
+②【本回合变化】块标题必须行首独立成行。只有真的发生重要变化才输出该块，每个变化占一行，emoji 前缀：
+
+```
+②【本回合变化】
+🟢 获得酒虫·一转
+🔴 左臂轻伤，真元 −15
+🔵 确认商队明日出发
+```
+
+③【当前局面】块标题必须行首独立成行。只显示当前真正影响选择的 5—8 项，每项占一行，编号或短横线开头：
+
+```
+③【当前局面】
+1. 商队明日出发，缺一名护卫
+2. 城中谣传山后出现狼潮
+3. 你的酒虫又饿了
+```
+
+④【参考行动】标题行【参考行动】必须行首独立成行，下面每行给一个方向，用短横线或编号开头，一行一个（2—4 个）。每个方向必须是一个具体可执行的行动。最后必须说明"也可以直接做任何你想做的事"。不要把参考选项当唯一玩法。网页版会把【参考行动】逐行渲染成可点击选项，所以格式必须可解析
+
+⑤【行动选项】（供网页版按钮解析）每回合末尾必须输出一个【行动选项】块，2-4 个选项，每行一个，格式：
+
+```
+【行动选项】
+1. 选项文本
+2. 选项文本
+3. 选项文本
+```
+
+不是回合场景时（纯结算、存档、问答等）可以不输出该块。
+
+⑥【状态快照】（供网页版面板解析）每回合结束时额外输出一个【状态快照】块，一行 JSON 完整快照，格式固定：
+
+```
+【状态快照】
+{"时间":"青茅山·开窍后·第三日","地点":"古月山寨·家中","姓名":"石破天",
+ "身份":"古月一族·一星子弟","修为":"一转初阶",
+ "真元":{"当前":30,"上限":100},"气血":{"当前":100,"上限":100},"元石":12,
+ "蛊虫":["酒虫·一转·健康"],"材料":["青竹酒×2"],
+ "伤势":"无","名声":"无名小卒"}
+```
+
+- 字段：时间/地点/姓名/身份/修为/伤势/名声为字符串；蛊虫/材料为字符串数组；真元、气血为 {"当前":数字,"上限":数字}；元石为数字
+- **完整快照**：每次输出全量字段，缺失字段网页版会保留旧值，数值为负或真元/气血超上限会被网页版拒绝
+- 该块是机读格式，不解释给玩家；在纯对话工具中看到它属正常，不影响游戏
+- 不是回合场景时（纯结算、存档、问答等）可以不输出
+
+## 世界线偏离
+
+只有真实改变关键原著前提时，才提示【世界线偏离】，用"玩家当前能够知道的方式"说明变化，从当前世界状态重新推演。
+
+典型偏离：玩家先取得并控制关键蛊；重要人物提前死亡或存活；原著关键证据被毁或提前公开；某组织没有形成原著中的联盟；某福地/洞天换了主人；关键炼蛊失败；世界级规则状态被真实改变。
+
+不要每做一件小事就宣布整个历史改变。偏离后，原著人物仍会根据自己的目标寻找新路线，不会站着等玩家。
+
+## 存档
+
+玩家发送【保存】时停止推进，并输出：
+
+```
+【蛊世界存档 V2】
+模式：
+世界阶段：
+时间：
+地点：
+角色/真实身份：
+公开身份：
+身体/伤势：
+修为：
+空窍/仙窍：
+真元/仙元：
+元石/仙元石：
+关键蛊虫及状态：
+杀招/材料：
+关键资源：
+人物关系：
+组织关系：
+已确认情报：
+可信但未确认：
+错误/失效信息：
+债务/承诺：
+公开名声/通缉：
+秘密与暴露：
+已经改变的原著关键前提：
+正在推进的重要事件：
+未到期后果：
+最近10件关键已发生事实：
+下一幕现场：
+```
+
+存档不能泄露玩家角色从未知道的后台秘密。
+
+新对话继续：重新粘贴本设定 → 粘贴存档 → 发送【读取存档继续】。
+读取以后：存档真实发生的事实优先。不补回消耗资源。不清伤。不复活死人。不把世界修回原著。
+
+## 禁止事项
+
+禁止：玩家一句话控制 NPC 心理或结果；NPC 读心；凭空送钱、元石、仙元石、蛊虫、仙蛊或身份；为玩家无理由降低人物智商；强制回原著；换场景后重置伤势、资源、关系；后台全知直接剧透；把所有关系写成好感度百分比；把所有组织写成一个人格；玩家没完成现实过程就自动拿到机缘；为了"硬核"故意针对玩家；玩家计划很好时暗中加难度保持平衡；大段复制原著正文；精确模仿原作者个人文风。
+
+## 现在开始
+
+记住：玩家不是来听你讲设定的。玩家是来进入一个真正会继续运行的蛊世界。
+现在不要总结。不要解释。不要开始剧情。
+第一条回复只输出【体验模式选择】。若玩家直接给出完整开局选择（模式+时间点+身份），直接开始游戏，不再输出模式菜单。
+</script>
+
+<script>
+"use strict";
+
+/* ============================================================
+   蛊真人 · 可变全世界模拟器 —— 前端逻辑
+   全部本地运行：提示词内置、对话历史存本机浏览器。
+   ============================================================ */
+
+const SYSTEM_PROMPT = document.getElementById("systemPromptSource").textContent.trim();
+
+const LS_KEY = "gzr_v2_state";
+const LS_CFG = "gzr_v2_config";
+
+/* ---------- 状态 ---------- */
+let state = { phase: "start", history: [] };   // phase: start / time / game
+let lastRawAi = "";   // 最近一次 AI 原始输出（含全部协议块）；显示用的 content 会被剥除，底部选项从这里提取
+let busy = false;
+
+/* ---------- 设置 ---------- */
+let cfg = loadCfg();
+function loadCfg() {
+  try {
+    const raw = localStorage.getItem(LS_CFG);
+    if (raw) return Object.assign({ base: "https://api.deepseek.com", key: "", model: "deepseek-chat", stream: true }, JSON.parse(raw));
+  } catch (e) {}
+  return { base: "https://api.deepseek.com", key: "", model: "deepseek-chat", stream: true };
+}
+function saveCfg() { localStorage.setItem(LS_CFG, JSON.stringify(cfg)); }
+
+/* ---------- DOM ---------- */
+const scene = document.getElementById("scene");
+const actionsEl = document.getElementById("actions");
+const freeInput = document.getElementById("freeInput");
+const btnSend = document.getElementById("btnSend");
+const phaseBadge = document.getElementById("phaseBadge");
+
+/* ---------- 渲染 ---------- */
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function textToHtml(t) {
+  return esc(t).split(/\n{2,}/).map(p => "<p>" + p.replace(/\n/g, "<br>") + "</p>").join("");
+}
+function appendMsg(role, content, cls) {
+  const div = document.createElement("div");
+  div.className = "msg " + role + (cls ? " " + cls : "");
+  if (role === "user") {
+    const b = document.createElement("div");
+    b.className = "bubble";
+    b.textContent = content;
+    div.appendChild(b);
+  } else if (role === "error") {
+    const b = document.createElement("div");
+    b.className = "bubble";
+    b.textContent = content;
+    div.appendChild(b);
+  } else {
+    const label = document.createElement("div");
+    label.className = "label";
+    label.textContent = "◆ 模拟器";
+    div.appendChild(label);
+    const body = document.createElement("div");
+    body.className = "body";
+    body.innerHTML = aiBodyHtml(content);
+    div.appendChild(body);
+    /* 参考行动选项卡：点击即作为行动发送 */
+    body.querySelectorAll(".ref-btn").forEach((b) => {
+      b.addEventListener("click", () => { Sound.click(); flashBtn(b); send(b.querySelector("span:last-child").textContent, { fromBtn: true }); });
+    });
+  }
+  scene.appendChild(div);
+  scrollBottom();
+  return div;
+}
+function scrollBottom() { scene.scrollTop = scene.scrollHeight; }
+
+function renderAll() {
+  scene.innerHTML = "";
+  for (const m of state.history) appendMsg(m.role, m.content);
+  updateBadge();
+  renderActions();
+}
+function updateBadge() {
+  const map = { start: "开局", time: "选择时间点", game: "游戏中" };
+  phaseBadge.textContent = map[state.phase] || "游戏中";
+}
+
+/* ---------- 行动选项 ---------- */
+function extractActions(text) {
+  const actions = [];
+  const idx = text.lastIndexOf("【行动选项】");
+  if (idx >= 0) {
+    const block = text.slice(idx);
+    const re = /^\s*\d+[.、．]\s*(.+?)\s*$/gm;
+    let r;
+    while ((r = re.exec(block)) !== null) {
+      const t = r[1].trim();
+      if (t) actions.push(t);
+    }
+  }
+  return actions.slice(0, 4);
+}
+function stripActions(text) {
+  /* 按块剥除【行动选项】（含条目行，停在非条目行），不误删其后可能出现的【参考行动】等块 */
+  return stripBlock(text, "行动选项").replace(/\s+$/, "");
+}
+
+/* 开局固定选项（来自提示词，前端硬编码） */
+const MODE_CARDS = [
+  { id: "1", emoji: "🟢", name: "休闲", desc: "机会密度最高，反馈最快，几乎不吃亏。" },
+  { id: "2", emoji: "🟢", name: "爽玩 · 推荐", desc: "机会密度更高，反馈更快，少走弯路。" },
+  { id: "3", emoji: "🔵", name: "沉浸", desc: "机会、资源、关系按世界自然发展。" },
+  { id: "4", emoji: "🔴", name: "硬核", desc: "身份、信息、时间、资源更加严格。" },
+  { id: "5", emoji: "🟥", name: "至暗", desc: "死亡、损失、背叛是常态，代价全程兑现。" }
+];
+const TIME_GROUPS = [
+  { g: "凡人 / 早期", items: [
+    { id: "1", label: "青茅山·开窍前夜" }, { id: "2", label: "开窍大典" }, { id: "3", label: "酒虫与花酒遗藏阶段" }, { id: "4", label: "狼潮与三寨阶段" } ] },
+  { g: "南疆出山", items: [
+    { id: "5", label: "离山/黄龙江/白骨山" }, { id: "6", label: "商队与商家城" }, { id: "7", label: "三王山传承" } ] },
+  { g: "北原", items: [
+    { id: "8", label: "北原身份落地" }, { id: "9", label: "王庭之争/八十八角真阳楼" } ] },
+  { g: "蛊仙阶段", items: [
+    { id: "10", label: "仙僵经营/宝黄天/僵盟" }, { id: "11", label: "梦境/义天山多层棋盘" }, { id: "12", label: "至尊仙窍早期" }, { id: "13", label: "逆流河与后续五域追逐" }, { id: "14", label: "宿命大战前夕" } ] },
+  { g: "尊者阶段", items: [
+    { id: "15", label: "疯魔窟后/尊者三方竞争" }, { id: "16", label: "自定义合理时间点" } ] },
+];
+
+function renderActions() {
+  actionsEl.innerHTML = "";
+  if (busy) return;
+  if (state.phase === "start" || state.phase === "time") {
+    const g = document.createElement("div");
+    g.className = "grp";
+    g.textContent = state.phase === "start" ? "开始你的蛊世界之旅：" : "继续完成开局：";
+    actionsEl.appendChild(g);
+    const b = document.createElement("button");
+    b.className = "act-btn";
+    b.innerHTML = '<span class="act-ic">🧭</span><span>打开开局向导</span>';
+    b.addEventListener("click", openWizard);
+    actionsEl.appendChild(b);
+  } else {
+    const raw = lastRawAi || ((state.history.filter(m => m.role === "assistant").pop() || {}).content || "");
+    const acts = extractActions(raw);
+    if (acts.length) {
+      const g = document.createElement("div");
+      g.className = "grp"; g.textContent = "行动选项：";
+      actionsEl.appendChild(g);
+      for (const a of acts) actionsEl.appendChild(makeBtn(a, { fromBtn: true }));
+    } else if (ledgerHasData()) {
+      /* 兜底：AI 这回合没给选项（纯结算/问答/格式不可解析）也不让玩家空手 */
+      const g = document.createElement("div");
+      g.className = "grp"; g.textContent = "可继续：";
+      for (const a of ["继续探索", "查看随身物品", "休整一下"]) actionsEl.appendChild(makeBtn(a, { fromBtn: true }));
+    }
+  }
+}
+/* ============================================================
+   开局向导：模式 → 时间点 → 身份，全卡片点选
+   ============================================================ */
+const STAGE_IDS = {
+  V1: ["1", "2", "3", "4"], V2: ["5", "6", "7"], V3: ["8", "9"],
+  V4: ["10", "11"], V5: ["12", "13", "14"], V6: ["15", "16"]
+};
+function stageForTime(id) {
+  for (const k of Object.keys(STAGE_IDS)) if (STAGE_IDS[k].includes(id)) return k;
+  return "V6";
+}
+const IDENTITY_POOLS = {
+  V1: [
+    { name: "方源", role: "古月一族 · 重生者", star: true, line: "两世为人，背负五百年记忆重归少年时。今生步步为营，只为长生。", goal: "以最小代价攫取最大利益，谋取永生" },
+    { name: "方正", role: "古月一族 · 方家次子", line: "兄长早慧压人一头，资质尚可却活在阴影里。", goal: "在家族学堂中证明自己，摆脱兄长的影子" },
+    { name: "白凝冰", role: "古月一族 · 天资骄子", line: "资质卓绝的天才少年，心高气傲，不信命运只信自己。", goal: "走出一条不受家族束缚的路" },
+    { name: "古月旁支子弟", role: "家族旁支子弟", line: "家底不厚，开窍在即，忐忑与期待交织。", goal: "开窍成功，在家族里站稳脚跟" },
+    { name: "猎户少年", role: "三寨猎户之子", line: "常在深山讨生活，对山中凶险有直觉。", goal: "狼潮将至，护住家人，寻一条活路" }
+  ],
+  V2: [
+    { name: "商队护卫", role: "南疆商队护卫", line: "常年走商路，刀口舔血，见惯人情冷暖。", goal: "攒够买蛊的元石，在商路上立住脚" },
+    { name: "商家旁支子弟", role: "商家旁支", line: "商家城旁支，家世尚可却不受重视。", goal: "借三王山机缘翻身，让家族正眼看自己" },
+    { name: "散修蛊师", role: "无门无派", line: "靠一两只蛊在夹缝中求生。", goal: "寻一处安稳修行之所，摆脱被追杀的日子" },
+    { name: "古月出山子弟", role: "古月一族", line: "从青茅山走出，打算在南疆闯一番名堂。", goal: "在江湖上立名，为家族挣一份脸面" },
+    { name: "三王山探险者", role: "散修探险者", line: "听说三王山传承传闻，想搏一场大机缘。", goal: "抢在别人之前拿到骨肉团圆蛊的线索" }
+  ],
+  V3: [
+    { name: "黄金部族子弟", role: "黄金血脉分支", line: "北原黄金血脉的分支后裔，血脉稀薄但身份特殊。", goal: "在部族与王庭的漩涡中保住部族" },
+    { name: "北原散修", role: "流落北原", line: "从南疆流落北原的散修，换了身份在此落脚。", goal: "借北原的混乱藏身，寻机东山再起" },
+    { name: "王庭使节", role: "王庭外围使节", line: "往来各部族传信的使节，消息灵通，也最危险。", goal: "把赌注押对，博一个王庭里的位置" },
+    { name: "狼群奴道者", role: "奴道学徒", line: "试图驾驭狼群的奴道者，日夜与狼为伴。", goal: "驯出一支听令的狼群" },
+    { name: "中洲行商", role: "边贸商人", line: "打着商旗走北原，边贸利润丰厚也致命。", goal: "做成这趟买卖，把货安全带出北原" }
+  ],
+  V4: [
+    { name: "低阶仙僵", role: "僵盟成员", line: "为续命或突破转化为仙僵，在僵盟底层挣扎。", goal: "熬过下一场灾劫，攒出进阶的资本" },
+    { name: "宝黄天行商", role: "材料商人", line: "常年泡在宝黄天倒卖材料，眼光毒辣。", goal: "抓住一次行情，狠狠赚一笔" },
+    { name: "影宗外线", role: "影宗外围", line: "为影宗跑腿探风，知道得太多也死得快。", goal: "摸清东家的底，给自己留条后路" },
+    { name: "失势执事", role: "古派执事", line: "门派里被排挤的执事，守着几分旧权。", goal: "借外部变局把对手拉下马，重掌权柄" },
+    { name: "魔道散仙", role: "魔道蛊仙", line: "在正道围剿缝隙里求生的魔道蛊仙。", goal: "寻一处洞天福地，安身立命" }
+  ],
+  V5: [
+    { name: "天庭巡察使", role: "天庭使者", line: "巡查五域的天庭使者，见识广、权限高。", goal: "查清一桩牵扯到影宗的旧案" },
+    { name: "影宗暗子", role: "影宗暗子", line: "深埋正道阵营的暗子，身份是秘密。", goal: "完成上命的一步棋，不暴露自己" },
+    { name: "超级家族子弟", role: "南疆大族", line: "出身南疆超级家族，资源优渥，责任也重。", goal: "在家族博弈中为自家长脸" },
+    { name: "五域游历蛊仙", role: "游历散仙", line: "走遍五域，见多识广，无牵无挂。", goal: "寻找冲击更高境界的机缘" },
+    { name: "仙窍历练者", role: "至尊仙窍来客", line: "偶然进入至尊仙窍的蛊师，小世界里自有机遇。", goal: "在仙窍生态里谋一份自己的资源" }
+  ],
+  V6: [
+    { name: "尊者门徒", role: "记名弟子", line: "某位尊者的记名弟子，见过顶层博弈。", goal: "在尊者间的棋盘上活下来并学到真东西" },
+    { name: "天庭幕僚", role: "天庭中枢", line: "在天庭中枢出谋划策的幕僚，深知水有多深。", goal: "在天庭的权力更迭中站住脚" },
+    { name: "魔道传人", role: "魔道后人", line: "魔道巨擘留下的传承之人，背负复兴执念。", goal: "把失落的传承找回来" },
+    { name: "琅琊炼道弟子", role: "琅琊福地", line: "从琅琊福地走出，一身炼蛊手艺。", goal: "炼出一只惊动一方的蛊" },
+    { name: "异人洞天使者", role: "异人使者", line: "异人族派驻五域的使者，身份天然敏感。", goal: "完成族中使命，全身而退" }
+  ]
+};
+const RANDOM_NAME = { sur: ["石", "叶", "白", "顾", "秦", "沈", "陆", "苏", "林", "罗"], given: ["青山", "归尘", "望舒", "临渊", "清源", "赤鳞", "玄机", "问天", "寒月", "惊鸿"] };
+const RANDOM_POOLS = {
+  early: { ages: ["14", "15", "16", "17", "18"], bgs: ["青茅山山脚猎户之子", "古月山寨杂役子弟", "过路商队的孤儿", "山中老农家的孙辈", "镇上药铺学徒"], goals: ["在开窍大典上被家族看中", "攒钱买下第一只蛊", "查明父母当年的死因", "走出山寨看看五域", "拜入一位蛊师门下"] },
+  south: { ages: ["16", "18", "20", "23", "25"], bgs: ["走南闯北的商队护卫", "家道中落的家族旁支", "黄龙江上的船夫", "白骨山外围的采药人", "散修传承的记名弟子"], goals: ["在商路上攒下第一桶金", "混进三王山寻一份机缘", "替家族重振门楣", "找到一本合用的修炼功法", "摆脱仇家追杀"] },
+  north: { ages: ["18", "20", "24", "28", "30"], bgs: ["黄金部族没落分支的少年", "北原马市上的贩马人", "王庭文书帐下的杂役", "从南疆北逃的散修", "部落祭坛的学徒"], goals: ["在部族之争中站到对的位置", "寻回家族失落的信物", "在王庭混个差事", "练成狼群奴道的入门", "活着离开北原"] },
+  immortal: { ages: ["25", "30", "40", "60", "90"], bgs: ["僵盟里挣扎求存的低阶仙僵", "宝黄天里倒卖材料的行商", "影宗外线的密探", "古派里失势的执事", "四处流窜的魔道散修"], goals: ["熬过下一场灾劫", "攒出仙蛊的喂养成本", "在僵盟里爬上一个位置", "查清背后那只手的来历", "找到延寿的手段"] },
+  zun: { ages: ["40", "60", "90", "120", "200"], bgs: ["某位尊者的记名门徒", "天庭中枢里不起眼的文官", "魔道残部培养的传人", "琅琊福地走出的炼道弟子", "异人洞天派驻五域的使者"], goals: ["在尊者博弈中保住宗门", "完成一次九转炼蛊的尝试", "摸清各方底牌", "为背后势力布下一步棋", "勘破自身的道途"] }
+};
+
+let wiz = { step: 0, mode: null, timeId: null, identity: null, custom: false };
+const wizOverlay = document.getElementById("wizardOverlay");
+const wizBody = document.getElementById("wizBody");
+const wizPrev = document.getElementById("wizPrev");
+const wizNext = document.getElementById("wizNext");
+const wizProgress = document.getElementById("wizProgress");
+const wizClose = document.getElementById("wizClose");
+
+function wizEl(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstElementChild; }
+function openWizard() {
+  if (busy) return;
+  wiz = { step: 0, mode: null, timeId: null, identity: null, custom: false };
+  renderWizardStep();
+  wizOverlay.classList.add("show");
+}
+function closeWizard() { wizOverlay.classList.remove("show"); }
+function renderWizardStep() {
+  wizProgress.querySelectorAll(".wiz-dot").forEach((d, i) => d.classList.toggle("on", i <= wiz.step));
+  wizPrev.style.display = wiz.step === 0 ? "none" : "";
+  if (wiz.step === 0) renderModeStep();
+  else if (wiz.step === 1) renderTimeStep();
+  else renderIdentityStep();
+}
+function selectCard(container, card, cb) {
+  container.querySelectorAll(".wiz-card.selected").forEach(c => c.classList.remove("selected"));
+  card.classList.add("selected");
+  cb(card.dataset.id);
+}
+function renderModeStep() {
+  wizBody.innerHTML = '<div class="wiz-step-title">选择体验模式 <span class="sub">（决定世界对你的照顾程度）</span></div><div class="wiz-grid" id="wizGrid"></div>';
+  const grid = wizBody.querySelector("#wizGrid");
+  for (const m of MODE_CARDS) {
+    const c = wizEl('<button class="wiz-card' + (wiz.mode === m.id ? " selected" : "") + '" data-id="' + m.id + '"><div class="wc-top"><span class="wc-ic">' + m.emoji + '</span><span class="wc-name">' + m.name + '</span><span class="wc-check">✓</span></div><div class="wc-desc">' + m.desc + '</div></button>');
+    c.addEventListener("click", () => {
+      selectCard(grid, c, () => { wiz.mode = m.id; });
+      setTimeout(() => { if (wiz.mode && wiz.step === 0) { wiz.step = 1; renderWizardStep(); } }, 260);
+    });
+    grid.appendChild(c);
+  }
+  wizNext.textContent = "下一步：选择时间点";
+  wizNext.disabled = !wiz.mode;
+}
+function renderTimeStep() {
+  wizBody.innerHTML = '<div class="wiz-step-title">选择时间点 <span class="sub">（决定你进入世界的时代）</span></div>';
+  for (const grp of TIME_GROUPS) {
+    wizBody.appendChild(wizEl('<div class="wiz-grp">' + grp.g + '</div>'));
+    const grid = wizEl('<div class="wiz-grid"></div>');
+    for (const it of grp.items) {
+      const c = wizEl('<button class="wiz-card' + (wiz.timeId === it.id ? " selected" : "") + '" data-id="' + it.id + '"><div class="wc-top"><span class="wc-name">' + it.label + '</span><span class="wc-check">✓</span></div></button>');
+      c.addEventListener("click", () => {
+        selectCard(grid, c, () => { wiz.timeId = it.id; });
+        setTimeout(() => { if (wiz.timeId && wiz.step === 1) { wiz.step = 2; renderWizardStep(); } }, 260);
+      });
+      grid.appendChild(c);
+    }
+    wizBody.appendChild(grid);
+  }
+  wizNext.textContent = "下一步：选择身份";
+  wizNext.disabled = !wiz.timeId;
+}
+function renderIdentityStep() {
+  wizBody.innerHTML = '<div class="wiz-step-title">选择身份 <span class="sub">（或自定义 / 随机）</span></div><div class="wiz-grid"></div>';
+  const grid = wizBody.querySelector(".wiz-grid");
+  const pool = IDENTITY_POOLS[stageForTime(wiz.timeId)] || IDENTITY_POOLS.V6;
+  for (const t of pool) {
+    const c = wizEl('<button class="wiz-card"><div class="wc-top"><span class="wc-ic">' + (t.star ? "⭐" : "👤") + '</span><span class="wc-name">' + t.name + '</span><span class="wc-tag">' + t.role + '</span><span class="wc-check">✓</span></div><div class="wc-desc">' + t.line + '</div><div class="wc-goal">目标：' + t.goal + '</div></button>');
+    c.addEventListener("click", () => {
+      selectCard(grid, c, () => { wiz.identity = { kind: "template", ...t }; wiz.custom = false; });
+      renderCustomForm();
+    });
+    grid.appendChild(c);
+  }
+  const customBtn = wizEl('<button class="wiz-card"><div class="wc-top"><span class="wc-ic">✏️</span><span class="wc-name">自定义身份</span><span class="wc-check">✓</span></div><div class="wc-desc">自己设定姓名、年龄、出身与目标。</div></button>');
+  customBtn.addEventListener("click", () => {
+    selectCard(grid, customBtn, () => { wiz.custom = true; wiz.identity = { kind: "custom", name: "", age: "", bg: "", goal: "" }; });
+    renderCustomForm();
+  });
+  grid.appendChild(customBtn);
+  const randomBtn = wizEl('<button class="wiz-card"><div class="wc-top"><span class="wc-ic">🎲</span><span class="wc-name">随机身份</span><span class="wc-check">✓</span></div><div class="wc-desc">立即生成一个合理原创身份。</div></button>');
+  randomBtn.addEventListener("click", () => {
+    selectCard(grid, randomBtn, () => { wiz.identity = randomIdentity(); wiz.custom = false; });
+    renderCustomForm();
+  });
+  grid.appendChild(randomBtn);
+  renderCustomForm();
+}
+function renderCustomForm() {
+  const old = wizBody.querySelector(".wiz-custom");
+  if (old) old.remove();
+  if (!wiz.identity) { wizNext.disabled = true; return; }
+  if (wiz.identity.kind === "template") { wizNext.disabled = false; return; }
+  const f = wizEl('<div class="wiz-custom"></div>');
+  f.innerHTML =
+    '<span class="wc-label">' + (wiz.custom ? "自定义身份" : "随机生成（可修改）") + '</span>' +
+    '<span class="wc-label">姓名或代号</span><input id="wizName" value="' + esc(wiz.identity.name || "") + '">' +
+    '<span class="wc-label">年龄</span><input id="wizAge" value="' + esc(wiz.identity.age || "") + '">' +
+    '<span class="wc-label">出身 / 身份背景</span><input id="wizBg" value="' + esc(wiz.identity.bg || "") + '">' +
+    '<span class="wc-label">一个主要目标</span><input id="wizGoal" value="' + esc(wiz.identity.goal || "") + '">';
+  wizBody.appendChild(f);
+  ["wizName", "wizAge", "wizBg", "wizGoal"].forEach(k => {
+    const inp = f.querySelector("#" + k);
+    if (inp) inp.addEventListener("input", () => {
+      if (!wiz.identity) return;
+      wiz.identity.name = f.querySelector("#wizName").value;
+      wiz.identity.age = f.querySelector("#wizAge").value;
+      wiz.identity.bg = f.querySelector("#wizBg").value;
+      wiz.identity.goal = f.querySelector("#wizGoal").value;
+      wizNext.disabled = !(wiz.identity.name || "").trim();
+    });
+  });
+  wizNext.disabled = !(wiz.identity.name || "").trim();
+}
+function randomIdentity() {
+  const key = { V1: "early", V2: "south", V3: "north", V4: "immortal", V5: "immortal", V6: "zun" }[stageForTime(wiz.timeId)] || "early";
+  const pool = RANDOM_POOLS[key];
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  return { kind: "random", name: pick(RANDOM_NAME.sur) + pick(RANDOM_NAME.given), age: pick(pool.ages), bg: pick(pool.bgs), goal: pick(pool.goals) };
+}
+function timeInfoOf(id) {
+  for (const grp of TIME_GROUPS) for (const it of grp.items) if (it.id === id) return { grp, it };
+  return null;
+}
+function assembleOpening() {
+  const mode = MODE_CARDS.find(m => m.id === wiz.mode);
+  const tinfo = timeInfoOf(wiz.timeId);
+  const id = wiz.identity;
+  const p = ["【开局指令】"];
+  p.push("体验模式：" + (mode ? mode.emoji + "【" + mode.id + "｜" + mode.name + "】" : ""));
+  p.push("时间点：" + (tinfo ? tinfo.grp.g + " · " + tinfo.it.label + "（" + tinfo.it.id + "）" : ""));
+  if (id && id.kind === "template") {
+    p.push("身份：" + id.name + "（" + id.role + "）", "背景：" + id.line, "目标：" + id.goal);
+  } else if (id) {
+    p.push("身份（" + (wiz.custom ? "自定义" : "随机") + "）：姓名=" + (id.name || "未命名") + "，年龄=" + (id.age || "—") + "，出身=" + (id.bg || "—") + "，目标=" + (id.goal || "—"));
+  }
+  p.push("", "请按以上选择直接开始游戏：不要再逐项确认，不要重新询问模式或身份，直接进入角色扮演，从所选时间点与身份出发，输出第一回合（含场景正文、【行动选项】与【状态快照】）。");
+  return p.join("\n");
+}
+function startWithWizard() {
+  if (busy) return;
+  if (!wiz.mode || !wiz.timeId || !wiz.identity) return;
+  const msg = assembleOpening();
+  closeWizard();
+  state = { phase: "game", history: [] };
+  saveState();
+  resetLedger();
+  updateBadge();
+  send(msg);
+}
+wizClose.addEventListener("click", closeWizard);
+wizOverlay.addEventListener("click", (e) => { if (e.target === wizOverlay) closeWizard(); });
+wizPrev.addEventListener("click", () => { wiz.step--; renderWizardStep(); });
+wizNext.addEventListener("click", () => {
+  if (wiz.step === 0) { wiz.step = 1; renderWizardStep(); }
+  else if (wiz.step === 1) { wiz.step = 2; renderWizardStep(); }
+  else startWithWizard();
+});
+
+/* 按动作关键词推断按钮图标（只影响显示，不影响发送文本） */
+function actIcon(text) {
+  const rules = [
+    [["前往", "去", "走", "逃", "离开", "回到", "移", "进入", "登上", "渡"], "🚶"],
+    [["战", "攻击", "杀", "打", "击", "追", "偷袭", "抵挡", "猎", "夺", "抢"], "🗡"],
+    [["说", "问", "谈", "试探", "打听", "交谈", "拜访", "找", "求", "求助"], "💬"],
+    [["买", "卖", "交易", "换", "讨价", "收购", "出售"], "💰"],
+    [["查", "看", "搜索", "调查", "观察", "摸", "搜寻", "翻"], "🔍"],
+    [["吃", "喝", "用", "催动", "修炼", "炼", "喂养", "吞服", "吸"], "🪄"],
+    [["休息", "睡", "恢复", "疗伤"], "💤"],
+  ];
+  for (const [ks, ic] of rules) if (ks.some((k) => text.includes(k))) return ic;
+  return "🧭";
+}
+function makeBtn(text, opts) {
+  const b = document.createElement("button");
+  b.className = "act-btn";
+  b.innerHTML = '<span class="act-ic">' + actIcon(text) + '</span><span>' + esc(text) + '</span>';
+  b.addEventListener("click", () => { Sound.click(); flashBtn(b); send(text, opts); });
+  return b;
+}
+
+/* ============================================================
+   状态引擎：本地管账（记账 / 校验 / 渲染 / 回填）
+   AI 每回合输出【状态快照】，本地解析、硬校验后更新面板。
+   AI 是唯一结算者，本地只记账，不做世界结算。
+   ============================================================ */
+const LS_LEDGER = "gzr_v2_ledger";
+
+const EMPTY_LEDGER = {
+  time: "", location: "", name: "", identity: "",
+  realm: "", zhenCur: 0, zhenMax: 0, yuan: 0,
+  qiCur: 0, qiMax: 0,
+  gu: [], materials: [], wounds: "", fame: "",
+  visited: []   // 本地轨迹：去过的地点（不在快照协议内，本地累积）
+};
+
+let ledger = loadLedger();
+function loadLedger() {
+  try {
+    const raw = localStorage.getItem(LS_LEDGER);
+    if (raw) {
+      const l = JSON.parse(raw);
+      if (l && typeof l === "object") return Object.assign({}, EMPTY_LEDGER, l);
+    }
+  } catch (e) {}
+  return Object.assign({}, EMPTY_LEDGER);
+}
+function saveLedger() { try { localStorage.setItem(LS_LEDGER, JSON.stringify(ledger)); } catch (e) {} }
+function resetLedger() { ledger = Object.assign({}, EMPTY_LEDGER); saveLedger(); renderLedger(); renderTrail(); renderHand(); }
+function ledgerHasData() {
+  return !!(ledger.name || ledger.realm || ledger.location || ledger.time || ledger.gu.length || ledger.yuan);
+}
+
+/* 从 AI 回复提取【状态快照】并解析为对象；找不到或解析失败返回 null */
+function parseSnapshot(text) {
+  const idx = text.lastIndexOf("【状态快照】");
+  if (idx < 0) return null;
+  let body = text.slice(idx + "【状态快照】".length).trim();
+  body = body.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  const b = body.indexOf("{");
+  const e = body.lastIndexOf("}");
+  if (b < 0 || e <= b) return null;
+  try { return JSON.parse(body.slice(b, e + 1)); } catch (err) { return null; }
+}
+
+/* 硬校验 + 合并：非法字段保留旧值，返回被拒绝字段列表 + 前后差值 */
+function applySnapshot(snap) {
+  const cur = Object.assign({}, ledger);
+  const prevZhen = cur.zhenCur;
+  const prevYuan = cur.yuan;
+  const prevGu = (cur.gu || []).slice();
+  const prevMat = (cur.materials || []).slice();
+  const prevWound = cur.wounds;
+  const rejected = [];
+  const isNum = (v) => typeof v === "number" && isFinite(v);
+  const isStr = (v) => typeof v === "string";
+  const isArr = (v) => Array.isArray(v);
+
+  if (isStr(snap["时间"])) cur.time = snap["时间"];
+  if (isStr(snap["地点"])) {
+    cur.location = snap["地点"];
+    if (snap["地点"].trim() && snap["地点"] !== ledger.location && !cur.visited.includes(snap["地点"])) {
+      cur.visited = cur.visited.concat([snap["地点"]]);   // 本地轨迹累积；concat 新建数组，不污染 EMPTY_LEDGER 的共享引用
+    }
+  }
+  if (isStr(snap["姓名"])) cur.name = snap["姓名"];
+  if (isStr(snap["身份"])) cur.identity = snap["身份"];
+  if (isStr(snap["修为"])) cur.realm = snap["修为"];
+  if (isStr(snap["伤势"])) cur.wounds = snap["伤势"];
+  if (isStr(snap["名声"])) cur.fame = snap["名声"];
+  if (isArr(snap["蛊虫"])) cur.gu = snap["蛊虫"].map(String);
+  if (isArr(snap["材料"])) cur.materials = snap["材料"].map(String);
+
+  if (snap["真元"] && typeof snap["真元"] === "object") {
+    const c = snap["真元"]["当前"], m = snap["真元"]["上限"];
+    if (isNum(c) && isNum(m) && m >= 0 && c >= 0 && c <= m) { cur.zhenCur = c; cur.zhenMax = m; }
+    else rejected.push("真元");
+  }
+  if (snap["气血"] && typeof snap["气血"] === "object") {
+    const c = snap["气血"]["当前"], m = snap["气血"]["上限"];
+    if (isNum(c) && isNum(m) && m >= 0 && c >= 0 && c <= m) { cur.qiCur = c; cur.qiMax = m; }
+    else rejected.push("气血");
+  }
+  if (snap["元石"] !== undefined) {
+    if (isNum(snap["元石"]) && snap["元石"] >= 0) cur.yuan = snap["元石"];
+    else rejected.push("元石");
+  }
+  return {
+    ledger: cur, rejected,
+    delta: {
+      zhenDelta: prevZhen - cur.zhenCur,
+      yuanDelta: prevYuan - cur.yuan,
+      guAdded: cur.gu.filter((g) => !prevGu.includes(g)),
+      guRemoved: prevGu.filter((g) => !cur.gu.includes(g)),
+      matAdded: cur.materials.filter((m) => !prevMat.includes(m)),
+      matRemoved: prevMat.filter((m) => !cur.materials.includes(m)),
+      woundsChanged: cur.wounds !== prevWound
+    }
+  };
+}
+
+/* 渲染角色面板 */
+function renderLedger() {
+  const el = (id) => document.getElementById(id);
+  const empty = !ledgerHasData();
+  document.getElementById("charPanel").classList.toggle("cp-empty", empty);
+  el("cpName").textContent = ledger.name || "—";
+  el("cpIdentity").textContent = ledger.identity || (empty ? "未开局" : "身份未知");
+  el("cpLocation").textContent = ledger.location || "—";
+  el("cpTime").textContent = ledger.time || "—";
+  el("cpRealm").textContent = ledger.realm || "—";
+  el("cpZYText").textContent = ledger.zhenMax > 0 ? ledger.zhenCur + " / " + ledger.zhenMax : "—";
+  el("cpZYFill").style.width = (ledger.zhenMax > 0 ? Math.min(100, ledger.zhenCur / ledger.zhenMax * 100) : 0) + "%";
+  el("cpQIText").textContent = ledger.qiMax > 0 ? ledger.qiCur + " / " + ledger.qiMax : "—";
+  el("cpQIFill").style.width = (ledger.qiMax > 0 ? Math.min(100, ledger.qiCur / ledger.qiMax * 100) : 0) + "%";
+  el("cpYuan").textContent = empty ? "—" : ledger.yuan + "";
+  el("cpGu").textContent = ledger.gu.length ? ledger.gu.join("、") : "—";
+  el("cpWound").textContent = ledger.wounds || "无";
+  el("cpMat").textContent = ledger.materials.length ? ledger.materials.join("、") : "—";
+  el("cpFame").textContent = ledger.fame || "—";
+}
+
+/* 回填账本给 AI（下轮发送时作为额外 system 消息，防止 AI 记错账） */
+function ledgerContext() {
+  return "【当前角色状态账本（本地记录，结算不得与它矛盾）】\n" + JSON.stringify({
+    "时间": ledger.time, "地点": ledger.location, "姓名": ledger.name, "身份": ledger.identity,
+    "修为": ledger.realm, "真元": { "当前": ledger.zhenCur, "上限": ledger.zhenMax },
+    "气血": { "当前": ledger.qiCur, "上限": ledger.qiMax },
+    "元石": ledger.yuan, "蛊虫": ledger.gu, "材料": ledger.materials,
+    "伤势": ledger.wounds, "名声": ledger.fame
+  });
+}
+
+/* 从显示文本中剥掉【状态快照】块（机读格式，不给玩家看） */
+function stripSnapshot(text) {
+  const idx = text.lastIndexOf("【状态快照】");
+  return (idx >= 0 ? text.slice(0, idx) : text).replace(/\s+$/, "");
+}
+
+/* ---------- 回合块解析与分块渲染 ---------- */
+/* 变化条目按首 emoji 着色 */
+const CHG_EMOJI = { "🟢": "gain", "🔴": "loss", "🔵": "info", "🟡": "warn", "🟣": "rel" };
+
+/* 条目判定：emoji 前缀 / 编号 / 短横线。正文段落、空行、下一个块标题都不是条目 */
+function looksLikeItem(t) {
+  const s = t.trim();
+  if (!s) return false;
+  if (CHG_EMOJI[Array.from(s)[0]]) return true;
+  if (/^[0-9０-９一二三四五六七八九十]+[.、．:：]/.test(s)) return true;
+  if (/^[-–—•·]\s*/.test(s)) return true;
+  return false;
+}
+
+/* 提取某块标题下的逐行条目（块标题行首独立；条目形如 emoji/编号/短横线开头；到非条目行结束） */
+function extractBlock(text, key) {
+  const items = [];
+  let inBlock = false;
+  for (const line of text.split("\n")) {
+    const t = line.trim();
+    if (!inBlock) {
+      if (t.includes("【" + key + "】")) inBlock = true;
+    } else if (looksLikeItem(t)) {
+      items.push(t);
+    } else {
+      break;
+    }
+  }
+  return items;
+}
+
+/* 从正文里剥掉某块（标题行 + 其下条目行），剩余正文渲染用；非条目行（含下一个块标题）停止剥除 */
+function stripBlock(text, key) {
+  const out = [];
+  let skip = false;
+  for (const line of text.split("\n")) {
+    const t = line.trim();
+    if (t.includes("【" + key + "】")) { skip = true; continue; }
+    if (skip) {
+      if (looksLikeItem(t)) continue;
+      skip = false;
+    }
+    out.push(line);
+  }
+  return out.join("\n");
+}
+function chgClass(line) {
+  const first = Array.from(line.trim())[0] || "";
+  return CHG_EMOJI[first] || "other";
+}
+
+/* 参考行动条目：清掉短横线/编号前缀，过滤"也可以直接做任何你想做的事"这类提示行，只留具体行动 */
+function extractRefActions(items) {
+  return items
+    .map((t) => t.replace(/^\s*[-–—•*+]\s+/, "").replace(/^\s*\d+\s*[.、．)）]\s*/, "").trim())
+    .filter((t) => t && !/(任何你?想做的事|直接做任何|自由发挥|随便|不用遵循|不想按|按你?自己的|随你)/.test(t))
+    .slice(0, 4);
+}
+
+/* AI 正文 → 分块 HTML：变化色块 + 局面列表 + 参考行动选项卡 + 剩余正文；找不到块时整段当正文 */
+function aiBodyHtml(content) {
+  const chgs = extractBlock(content, "本回合变化");
+  const sits = extractBlock(content, "当前局面");
+  const refs = extractRefActions(extractBlock(content, "参考行动"));
+  let body = content;
+  if (chgs.length) body = stripBlock(body, "本回合变化");
+  if (sits.length) body = stripBlock(body, "当前局面");
+  if (refs.length) body = stripBlock(body, "参考行动");
+  let html = textToHtml(body);
+  if (chgs.length) {
+    html += '<div class="chg-card">' + chgs.map((c) =>
+      '<div class="chg-item ' + chgClass(c) + '">' + esc(c) + '</div>').join("") + '</div>';
+  }
+  if (sits.length) {
+    html += '<div class="sit-card"><div class="sit-title">📌 当前局面</div>' +
+      sits.map((s) => '<div class="sit-item">' + esc(s) + '</div>').join("") + '</div>';
+  }
+  if (refs.length) {
+    html += '<div class="ref-card"><div class="ref-title">🖊 参考行动 · 点一下直接行动</div><div class="ref-btns">' +
+      refs.map((r) => '<button type="button" class="ref-btn"><span class="ref-ic">🧭</span><span>' + esc(r) + '</span></button>').join("") +
+      '</div></div>';
+  }
+  return html;
+}
+
+/* ---------- 轨迹 / 物品栏 / 详情 / 飘字（全部读本地账本，0 延迟） ---------- */
+function renderTrail() {
+  const el = document.getElementById("trail");
+  if (!el) return;
+  if (!ledger.visited || !ledger.visited.length) { el.style.display = "none"; el.innerHTML = ""; return; }
+  el.style.display = "";
+  el.innerHTML = '<span class="trail-title">🗺 去过</span>' +
+    ledger.visited.map((v) => '<span class="trail-chip" title="作为行动前往">' + esc(v) + '</span>').join("");
+  el.querySelectorAll(".trail-chip").forEach((c) => {
+    c.addEventListener("click", () => send("前往" + c.textContent, { fromBtn: true }));
+  });
+}
+
+function renderHand() {
+  const el = document.getElementById("hand");
+  if (!el) return;
+  if (!ledgerHasData()) { el.innerHTML = ""; return; }
+  const gu = ledger.gu || [], mat = ledger.materials || [];
+  if (!gu.length && !mat.length) { el.innerHTML = '<div class="hand-empty">🈳 空手</div>'; return; }
+  let h = '<span class="hand-title">🎒 随身</span>';
+  for (const g of gu) h += '<div class="hand-card hand-gu">🐛 ' + esc(g) + '</div>';
+  for (const m of mat) h += '<div class="hand-card hand-mat">🧰 ' + esc(m) + '</div>';
+  el.innerHTML = h;
+  el.querySelectorAll(".hand-card").forEach((c) => {
+    c.addEventListener("click", () => showDetail("物品详情", [["物品", c.textContent.replace(/^[^\s]+\s/, "")]]));
+  });
+}
+
+function showDetail(title, rows) {
+  document.getElementById("detailTitle").textContent = title;
+  document.getElementById("detailBody").innerHTML =
+    rows.map(([k, v]) => '<div class="d-row"><span class="d-k">' + esc(k) + '</span><span class="d-v">' + esc(v || "—") + '</span></div>').join("");
+  document.getElementById("detailOverlay").classList.add("show");
+}
+
+function showCharDetail() {
+  const rows = [
+    ["姓名", ledger.name], ["身份", ledger.identity], ["修为", ledger.realm],
+    ["真元", ledger.zhenMax > 0 ? ledger.zhenCur + " / " + ledger.zhenMax : ""],
+    ["气血", ledger.qiMax > 0 ? ledger.qiCur + " / " + ledger.qiMax : ""],
+    ["元石", ledgerHasData() ? String(ledger.yuan) : ""], ["伤势", ledger.wounds],
+    ["名声", ledger.fame], ["地点", ledger.location], ["时间", ledger.time],
+    ["蛊虫", ledger.gu.join("、")], ["材料", ledger.materials.join("、")],
+    ["去过", (ledger.visited || []).join("、")],
+  ];
+  showDetail("🧬 " + (ledger.name || "角色") + " · 完整状态", rows);
+}
+
+/* 飘字（通用）：text 形式直接显示文本，up=true 绿色 / false 红色 */
+function floatMsg(text, up) {
+  const wrap = document.getElementById("charPanel");
+  if (!wrap) return;
+  const d = document.createElement("div");
+  d.className = "float-num " + (up ? "up" : "down");
+  d.textContent = text;
+  wrap.appendChild(d);
+  setTimeout(() => { if (d.parentNode) d.parentNode.removeChild(d); }, 1200);
+}
+
+/* 真元变化飘字（本地对比前后差值，开局首次不飘）；label 如 "真元" */
+function floatNum(delta, label) {
+  if (!delta) return;
+  /* delta = 前值 − 当前值：正数表示减少（消耗/受伤，红），负数表示增加（恢复，绿） */
+  floatMsg((delta > 0 ? "−" : "+") + Math.abs(delta) + (label ? " " + label : ""), delta < 0);
+}
+
+/* ---------- 观感工具：音效 / 屏幕震动 / 元素高亮 ---------- */
+const Sound = (() => {
+  let ctx = null, muted = false;
+  function ensure() {
+    if (muted) return null;
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; } }
+    if (ctx && ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
+    return ctx;
+  }
+  function tone(freq, dur, type, vol, when) {
+    const c = ensure(); if (!c) return;
+    try {
+      const t0 = c.currentTime + (when || 0);
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = type || "sine"; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(vol || .08, t0 + .012);
+      g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+      o.connect(g); g.connect(c.destination);
+      o.start(t0); o.stop(t0 + dur + .03);
+    } catch (e) {}
+  }
+  return {
+    toggle() { muted = !muted; return muted; },
+    isMuted() { return muted; },
+    click()  { tone(560, .05, "triangle", .05); },
+    send()   { tone(340, .08, "sine", .07); tone(500, .07, "sine", .05, .05); },
+    gain()   { tone(660, .1, "sine", .08); tone(880, .12, "sine", .05, .07); },
+    loss()   { tone(300, .16, "sawtooth", .05); },
+    hit()    { tone(150, .12, "sawtooth", .09); tone(95, .16, "square", .06); },
+    error()  { tone(220, .18, "sawtooth", .06); tone(170, .22, "sawtooth", .05, .12); },
+    ding()   { tone(520, .08, "sine", .06); tone(700, .1, "sine", .05, .08); }
+  };
+})();
+
+/* 战斗/受伤时的轻屏幕震动 */
+function shakeScreen() {
+  document.body.classList.remove("shake");
+  void document.body.offsetWidth;   /* 重触发动画 */
+  document.body.classList.add("shake");
+  setTimeout(() => document.body.classList.remove("shake"), 330);
+}
+
+/* 给元素加短暂高亮（获得绿闪/损失红闪）；id 或元素均可 */
+function flashEl(id, up) {
+  const el = typeof id === "string" ? document.getElementById(id) : id;
+  if (!el) return;
+  el.classList.remove("flash-up", "flash-down");
+  void el.offsetWidth;
+  el.classList.add(up ? "flash-up" : "flash-down");
+}
+
+/* 按钮点击闪击（白色光晕，攻击感） */
+function flashBtn(el) {
+  if (!el) return;
+  el.classList.remove("flash");
+  void el.offsetWidth;
+  el.classList.add("flash");
+}
+
+/* ---------- 持久化 ---------- */
+function saveState() { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+
+/* ---------- API 调用 ---------- */
+function apiUrl() { return cfg.base.replace(/\/+$/, "") + "/chat/completions"; }
+
+async function callAPI(messages, onDelta) {
+  const res = await fetch(apiUrl(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + cfg.key
+    },
+    body: JSON.stringify({ model: cfg.model, messages, stream: cfg.stream })
+  });
+  if (!res.ok) {
+    let detail = "";
+    try { detail = (await res.text()).slice(0, 300); } catch (e) {}
+    throw new Error("HTTP " + res.status + "：" + detail);
+  }
+  if (!cfg.stream) {
+    const j = await res.json();
+    onDelta(j.choices && j.choices[0] && j.choices[0].message ? j.choices[0].message.content : "");
+    return;
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf("\n")) >= 0) {
+      let line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line.startsWith("data:")) continue;
+      const data = line.slice(5).trim();
+      if (data === "[DONE]") return;
+      try {
+        const j = JSON.parse(data);
+        const d = j.choices && j.choices[0] && j.choices[0].delta;
+        if (d && d.content) onDelta(d.content);
+      } catch (e) {}
+    }
+  }
+}
+
+/* ---------- 发送 ---------- */
+function send(text, opts) {
+  text = String(text || "").trim();
+  if (!text || busy) return;
+  if (state.phase === "start") state.phase = "time";
+  else if (state.phase === "time") state.phase = "game";
+  updateBadge();
+  /* 观感：战斗类行动给重反馈（震屏+重音），普通行动轻反馈 */
+  if (/(战|攻|杀|打|击|追|偷袭|抵挡|猎|夺|抢|斗|围攻)/.test(text)) { Sound.hit(); shakeScreen(); }
+  else Sound.send();
+  flashBtn(btnSend);
+  state.history.push({ role: "user", content: text });
+  saveState();
+  renderAll();
+  busy = true;
+  btnSend.disabled = true;
+  freeInput.value = "";
+  actionsEl.innerHTML = "";
+  /* 乐观反馈：按钮发起的行动立即给确认，AI 流式回来后替换 */
+  const waitText = (opts && opts.fromBtn) ? "🧭 正在行动：" + text + " …" : "… 世界在推演中";
+  const wait = document.createElement("div");
+  wait.className = "msg ai";
+  wait.innerHTML = '<div class="label">◆ 模拟器</div><div class="body">' + esc(waitText) + '</div>';
+  scene.appendChild(wait);
+  scrollBottom();
+
+  const messages = [{ role: "system", content: SYSTEM_PROMPT }];
+  if (ledgerHasData()) messages.push({ role: "system", content: ledgerContext() });
+  for (const m of state.history) messages.push(m);
+  const aiMsg = { role: "assistant", content: "" };
+  state.history.push(aiMsg);
+  saveState();
+
+  let bodyEl = null, aiDiv = null;
+  callAPI(messages, (delta) => {
+    aiMsg.content += delta;
+    if (!bodyEl) {
+      if (wait.parentNode) wait.parentNode.removeChild(wait);
+      aiDiv = appendMsg("assistant", aiMsg.content);
+      bodyEl = aiDiv.querySelector(".body");
+    } else {
+      bodyEl.innerHTML = textToHtml(aiMsg.content);
+      scrollBottom();
+    }
+  }).then(() => {
+    if (!bodyEl && wait.parentNode) wait.parentNode.removeChild(wait);
+    const snap = parseSnapshot(aiMsg.content);
+    if (snap) {
+      const hadData = ledgerHasData();
+      const r = applySnapshot(snap);
+      const d = r.delta || {};
+      if (hadData) {
+        if (d.zhenDelta) { floatNum(d.zhenDelta, "真元"); d.zhenDelta > 0 ? Sound.loss() : Sound.gain(); }
+        if (d.yuanDelta) { floatNum(d.yuanDelta, "元石"); flashEl("cpYuan", d.yuanDelta < 0); d.yuanDelta < 0 ? Sound.gain() : Sound.loss(); }
+        d.guAdded.forEach((g) => floatMsg("🐛 获得 " + g, true));
+        d.guRemoved.forEach((g) => floatMsg("🐛 失去 " + g, false));
+        d.matAdded.forEach((m) => floatMsg("🧰 获得 " + m, true));
+        d.matRemoved.forEach((m) => floatMsg("🧰 失去 " + m, false));
+        if (d.guAdded.length || d.guRemoved.length) flashEl("cpGu", d.guAdded.length > 0);
+        if (d.matAdded.length || d.matRemoved.length) flashEl("cpMat", d.matAdded.length > 0);
+        if (d.woundsChanged) flashEl("cpWound", false);
+      }
+      ledger = r.ledger;
+      saveLedger();
+      renderLedger();
+      renderTrail();
+      renderHand();
+    }
+    lastRawAi = aiMsg.content;   // 保留原始输出供底部选项提取（renderActions 用）
+    aiMsg.content = stripSnapshot(aiMsg.content);
+    aiMsg.content = stripActions(aiMsg.content);
+    if (aiDiv && aiDiv.parentNode) aiDiv.parentNode.removeChild(aiDiv);
+    appendMsg("assistant", aiMsg.content, "enter");
+    Sound.ding();
+    busy = false;
+    btnSend.disabled = false;
+    saveState();
+    renderAll();
+  }).catch((err) => {
+    if (wait.parentNode) wait.parentNode.removeChild(wait);
+    state.history.pop();
+    busy = false;
+    btnSend.disabled = false;
+    Sound.error();
+    appendMsg("error", "调用失败：" + err.message + "\n\n如果提示是 CORS / 网络错误，试着在 VSCode 里右键本文件 → Open with Live Server 再打开；确认 API Key 和地址填对了。");
+    saveState();
+    renderAll();
+  });
+}
+
+/* ---------- 开局欢迎 ---------- */
+function showWelcome() {
+  scene.innerHTML = "";
+  const d = document.createElement("div");
+  d.className = "msg ai";
+  d.innerHTML = '<div class="label">◆ 蛊世界</div><div class="body">' +
+    textToHtml("🌙 蛊世界\n\n这一次，原著只是过去。\n你真正做过的事，会留下来。\n\n点击下方「打开开局向导」，三步选定开局，直接进世界。也可以直接打字告诉我想怎么玩。") + '</div>';
+  scene.appendChild(d);
+  scrollBottom();
+  renderActions();
+}
+
+/* ---------- 新开局 ---------- */
+function newGame() {
+  if (state.history.length && !confirm("真的要新开局吗？当前进度会清空。先点【导出存档】可以保存进度。")) return;
+  state = { phase: "start", history: [] };
+  lastRawAi = "";
+  saveState();
+  resetLedger();
+  updateBadge();
+  showWelcome();
+  openWizard();
+}
+
+/* ---------- 导出 / 导入 ---------- */
+function exportText() {
+  const parts = [];
+  for (const m of state.history) {
+    if (m.role === "user") parts.push("玩家：" + m.content);
+    else parts.push("模拟器：\n" + m.content);
+  }
+  const txt = parts.join("\n\n------------------------\n\n");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(() => alert("已复制到剪贴板，粘贴到任何地方保存即可。")).catch(() => fallbackCopy(txt));
+  } else {
+    fallbackCopy(txt);
+  }
+}
+function fallbackCopy(txt) {
+  const ta = document.createElement("textarea");
+  ta.value = txt;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); alert("已复制到剪贴板（兜底方式）。"); } catch (e) { prompt("复制失败，手动复制以下内容：", txt); }
+  document.body.removeChild(ta);
+}
+
+/* ---------- 移动端软键盘高度 → --kkb（footer 抬升 / 弹层收缩共用） ---------- */
+(function () {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const root = document.documentElement;
+  const editing = () => document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+  const apply = () => {
+    const kb = editing() ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+    root.style.setProperty("--kkb", kb ? kb + "px" : "0px");
+  };
+  document.addEventListener("focusin", apply);
+  document.addEventListener("focusout", apply);
+  vv.addEventListener("resize", apply);
+  vv.addEventListener("scroll", apply);
+  apply();
+})();
+
+/* ---------- 事件绑定 ---------- */
+btnSend.addEventListener("click", () => send(freeInput.value));
+freeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") send(freeInput.value); });
+document.getElementById("btnNew").addEventListener("click", newGame);
+document.getElementById("btnSound").addEventListener("click", () => {
+  document.getElementById("btnSound").textContent = Sound.toggle() ? "🔇" : "🔊";
+});
+
+document.getElementById("btnExport").addEventListener("click", () => {
+  if (!state.history.length) { alert("还没有内容可导出。"); return; }
+  exportText();
+});
+
+document.getElementById("btnImport").addEventListener("click", () => {
+  document.getElementById("importText").value = "";
+  document.getElementById("importOverlay").classList.add("show");
+});
+document.getElementById("charPanel").addEventListener("click", showCharDetail);
+document.getElementById("detailClose").addEventListener("click", () => document.getElementById("detailOverlay").classList.remove("show"));
+document.getElementById("detailOverlay").addEventListener("click", (e) => {
+  if (e.target === document.getElementById("detailOverlay")) document.getElementById("detailOverlay").classList.remove("show");
+});
+document.getElementById("impCancel").addEventListener("click", () => document.getElementById("importOverlay").classList.remove("show"));
+document.getElementById("impGo").addEventListener("click", () => {
+  const txt = document.getElementById("importText").value.trim();
+  document.getElementById("importOverlay").classList.remove("show");
+  if (!txt) return;
+  if (state.history.length && !confirm("导入存档会清掉当前对话（存档文本本身会作为新对话发出去）。继续？")) return;
+  state = { phase: "game", history: [] };
+  lastRawAi = "";
+  const snap = parseSnapshot(txt);
+  if (snap) { const r = applySnapshot(snap); ledger = r.ledger; saveLedger(); }
+  renderLedger();
+  renderTrail();
+  renderHand();
+  send("【读取存档继续】\n\n" + txt);
+});
+
+/* 设置 */
+document.getElementById("btnSettings").addEventListener("click", () => {
+  document.getElementById("cfgBase").value = cfg.base;
+  document.getElementById("cfgKey").value = cfg.key;
+  document.getElementById("cfgModel").value = cfg.model;
+  document.getElementById("cfgStream").checked = cfg.stream;
+  document.getElementById("settingsOverlay").classList.add("show");
+});
+document.getElementById("cfgCancel").addEventListener("click", () => document.getElementById("settingsOverlay").classList.remove("show"));
+document.getElementById("cfgSave").addEventListener("click", () => {
+  cfg.base = document.getElementById("cfgBase").value.trim() || "https://api.deepseek.com";
+  cfg.key = document.getElementById("cfgKey").value.trim();
+  cfg.model = document.getElementById("cfgModel").value.trim() || "deepseek-chat";
+  cfg.stream = document.getElementById("cfgStream").checked;
+  saveCfg();
+  document.getElementById("settingsOverlay").classList.remove("show");
+  alert("设置已保存。");
+});
+
+/* ---------- 初始化 ---------- */
+(function init() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && Array.isArray(s.history)) {
+        state = s;
+        updateBadge();
+        renderLedger();
+        renderTrail();
+        renderHand();
+        renderAll();
+        if (state.phase === "start" || state.phase === "time") openWizard();
+        return;
+      }
+    }
+  } catch (e) {}
+  state = { phase: "start", history: [] };
+  saveState();
+  renderLedger();
+  renderTrail();
+  renderHand();
+  updateBadge();
+  showWelcome();
+  openWizard();
+})();
+</script>
+</body>
+</html>
