@@ -1158,6 +1158,7 @@
 ```
 
 - 字段：时间/地点/姓名/身份/修为/伤势/名声/世界阶段为字符串；蛊虫/材料为字符串数组；真元、气血为 {"当前":数字,"上限":数字}；元石为数字
+- **真元/气血**：开窍后（有转阶）真元上限 = 空窍容量，按资质/元海结算；已开窍角色上限必须 > 0、每回合快照必带真元与气血，当前可为 0；凡人（未开窍）可写 0/0 或省略
 - **世界阶段**（可选，供跨卷自动切换）：按"六大世界阶段"填当前所属阶段，如 "V2 南疆"。剧情推进到新阶段时更新；网页版据此自动切换注入的原著档案（V1–V6），漏填或填错则保持当前档案、不报错
 - **完整快照**：每次输出全量字段，缺失字段网页版会保留旧值，数值为负或真元/气血超上限会被网页版拒绝
 - 该块是机读格式，不解释给玩家；在纯对话工具中看到它属正常，不影响游戏
@@ -2198,8 +2199,8 @@ const LS_LEDGER = "gzr_v2_ledger";
 
 const EMPTY_LEDGER = {
   time: "", location: "", name: "", identity: "",
-  realm: "", zhenCur: 0, zhenMax: 0, yuan: 0,
-  qiCur: 0, qiMax: 0,
+  realm: "", zhenCur: 0, zhenMax: 0, zhenKnown: false, yuan: 0,
+  qiCur: 0, qiMax: 0, qiKnown: false,
   gu: [], materials: [], wounds: "", fame: "",
   visited: []   // 本地轨迹：去过的地点（不在快照协议内，本地累积）
 };
@@ -2263,12 +2264,12 @@ function applySnapshot(snap) {
 
   if (snap["真元"] && typeof snap["真元"] === "object") {
     const c = snap["真元"]["当前"], m = snap["真元"]["上限"];
-    if (isNum(c) && isNum(m) && m >= 0 && c >= 0 && c <= m) { cur.zhenCur = c; cur.zhenMax = m; }
+    if (isNum(c) && isNum(m) && m >= 0 && c >= 0 && c <= m) { cur.zhenCur = c; cur.zhenMax = m; cur.zhenKnown = true; }
     else rejected.push("真元");
   }
   if (snap["气血"] && typeof snap["气血"] === "object") {
     const c = snap["气血"]["当前"], m = snap["气血"]["上限"];
-    if (isNum(c) && isNum(m) && m >= 0 && c >= 0 && c <= m) { cur.qiCur = c; cur.qiMax = m; }
+    if (isNum(c) && isNum(m) && m >= 0 && c >= 0 && c <= m) { cur.qiCur = c; cur.qiMax = m; cur.qiKnown = true; }
     else rejected.push("气血");
   }
   if (snap["元石"] !== undefined) {
@@ -2299,10 +2300,12 @@ function renderLedger() {
   el("cpLocation").textContent = ledger.location || "—";
   el("cpTime").textContent = ledger.time || "—";
   el("cpRealm").textContent = ledger.realm || "—";
-  el("cpZYText").textContent = ledger.zhenMax > 0 ? ledger.zhenCur + " / " + ledger.zhenMax : "—";
-  el("cpZYFill").style.width = (ledger.zhenMax > 0 ? Math.min(100, ledger.zhenCur / ledger.zhenMax * 100) : 0) + "%";
-  el("cpQIText").textContent = ledger.qiMax > 0 ? ledger.qiCur + " / " + ledger.qiMax : "—";
-  el("cpQIFill").style.width = (ledger.qiMax > 0 ? Math.min(100, ledger.qiCur / ledger.qiMax * 100) : 0) + "%";
+  const showZhen = ledger.zhenMax > 0 || ledger.zhenKnown;
+  el("cpZYText").textContent = showZhen ? ledger.zhenCur + " / " + ledger.zhenMax : "—";
+  el("cpZYFill").style.width = (showZhen && ledger.zhenMax > 0 ? Math.min(100, ledger.zhenCur / ledger.zhenMax * 100) : 0) + "%";
+  const showQi = ledger.qiMax > 0 || ledger.qiKnown;
+  el("cpQIText").textContent = showQi ? ledger.qiCur + " / " + ledger.qiMax : "—";
+  el("cpQIFill").style.width = (showQi && ledger.qiMax > 0 ? Math.min(100, ledger.qiCur / ledger.qiMax * 100) : 0) + "%";
   el("cpYuan").textContent = empty ? "—" : ledger.yuan + "";
   el("cpGu").textContent = ledger.gu.length ? ledger.gu.join("、") : "—";
   el("cpWound").textContent = ledger.wounds || "无";
@@ -2312,13 +2315,17 @@ function renderLedger() {
 
 /* 回填账本给 AI（下轮发送时作为额外 system 消息，防止 AI 记错账） */
 function ledgerContext() {
+  let hint = "";
+  if (ledger.zhenMax === 0 && /转/.test(ledger.realm || "")) {
+    hint = "\n【提示】该角色已开窍/入修行道（修为含转阶），真元上限应为空窍（仙窍）容量且 > 0；请在下轮【状态快照】如实填写真元与气血。只有凡人（未开窍）才写真元 0/0 或省略。";
+  }
   return "【当前角色状态账本（本地记录，结算不得与它矛盾）】\n" + JSON.stringify({
     "时间": ledger.time, "地点": ledger.location, "姓名": ledger.name, "身份": ledger.identity,
     "修为": ledger.realm, "真元": { "当前": ledger.zhenCur, "上限": ledger.zhenMax },
     "气血": { "当前": ledger.qiCur, "上限": ledger.qiMax },
     "元石": ledger.yuan, "蛊虫": ledger.gu, "材料": ledger.materials,
     "伤势": ledger.wounds, "名声": ledger.fame
-  });
+  }) + hint;
 }
 
 /* 从显示文本中剥掉【状态快照】块（机读格式，不给玩家看）。
@@ -2443,8 +2450,8 @@ function showDetail(title, rows) {
 function showCharDetail() {
   const rows = [
     ["姓名", ledger.name], ["身份", ledger.identity], ["修为", ledger.realm],
-    ["真元", ledger.zhenMax > 0 ? ledger.zhenCur + " / " + ledger.zhenMax : ""],
-    ["气血", ledger.qiMax > 0 ? ledger.qiCur + " / " + ledger.qiMax : ""],
+    ["真元", (ledger.zhenMax > 0 || ledger.zhenKnown) ? ledger.zhenCur + " / " + ledger.zhenMax : ""],
+    ["气血", (ledger.qiMax > 0 || ledger.qiKnown) ? ledger.qiCur + " / " + ledger.qiMax : ""],
     ["元石", ledgerHasData() ? String(ledger.yuan) : ""], ["伤势", ledger.wounds],
     ["名声", ledger.fame], ["地点", ledger.location], ["时间", ledger.time],
     ["蛊虫", ledger.gu.join("、")], ["材料", ledger.materials.join("、")],
