@@ -225,6 +225,24 @@
   .more-box { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
   .more-box[hidden] { display: none; }
 
+  /* 行动选项卡折叠条：金色醒目，默认收起不挡剧情，点开展开选项按钮 */
+  .act-wrap { width: 100%; }
+  .act-toggle {
+    width: 100%;
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(180deg, #33290f 0%, #1e180c 60%, #151008 100%);
+    border: 1px solid #8a6d2f; border-radius: 9px;
+    color: #f0d98a; font-size: 13px; font-weight: 600; cursor: pointer;
+    padding: 9px 12px;
+    box-shadow: 0 1px 0 rgba(240,217,138,.18) inset, 0 -2px 4px rgba(0,0,0,.45) inset, 0 2px 6px rgba(0,0,0,.5);
+  }
+  .act-toggle:hover { border-color: #c9a23e; color: #ffe9a3; }
+  .act-toggle .at-count { color: #e8c56a; }
+  .act-toggle .at-arrow { margin-left: auto; color: #8f98a3; }
+  .act-toggle.open .at-arrow { color: #e8c56a; }
+  .act-box { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
+  .act-box[hidden] { display: none; }
+
   #inputBar {
     display: flex;
     gap: 8px;
@@ -318,8 +336,8 @@
   .cp-item { color: #8f98a3; min-width: 0; }
   .cp-item span { color: #c8cdd4; }
   .cp-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 34%; }
-  /* 真元/气血双条：并排、永远可见；折叠时变紧凑 */
-  .cp-bars { display: flex; gap: 10px; margin-top: 7px; }
+  /* 真元/气血双条：永远可见；位于名片首行右侧，折叠时变紧凑 */
+  .cp-bars { display: flex; gap: 10px; margin-left: auto; }
   .cp-bars .cp-bar-wrap { flex: 1; min-width: 0; }
   .cp-bar-label { font-size: 11px; color: #8f98a3; }
   .cp-bar {
@@ -345,9 +363,8 @@
   .cp-toggle:hover { color: #e8c56a; background: #1d242e; }
   #charPanel.collapsed .cp-collapse { display: none; }
   #charPanel.collapsed .cp-toggle { transform: rotate(-90deg); }
-  /* 折叠态：藏位置/时间，双条收紧凑 */
-  #charPanel.collapsed .cp-top .cp-where { display: none; }
-  #charPanel.collapsed .cp-bars { gap: 8px; margin-top: 5px; }
+  /* 折叠态：双条收紧凑 */
+  #charPanel.collapsed .cp-bars { gap: 8px; }
   #charPanel.collapsed .cp-bar-label { font-size: 10.5px; }
   #charPanel.collapsed .cp-bar { height: 5px; margin-top: 2px; }
 
@@ -651,17 +668,26 @@
     .panel input[type=text], .panel input[type=password], .panel textarea { font-size: 16px; }
     .wiz-custom input { font-size: 16px; }
 
-    /* 角色面板精简：双条并排、折叠态紧凑、提示行手机隐藏 */
+    /* 角色面板精简：首行不换行、双条竖排贴右、折叠态紧凑、提示行手机隐藏 */
     #charPanel { padding: 8px 12px; }
+    .cp-top { flex-wrap: nowrap; }
     .cp-row + .cp-row { margin-top: 5px; }
-    .cp-bars { margin-top: 6px; }
     .cp-ellipsis { max-width: 100%; }
     .cp-hint { display: none; }
-    /* 名字区比例收紧：头像/姓名/身份标签/位置时间缩小；真元气血双条不动 */
+    /* 名字区比例收紧：头像/姓名/身份标签缩小；真元气血移到名字右侧竖排 */
     .cp-avatar { font-size: 20px; }
     .cp-name { font-size: 12.5px; }
     .cp-tag { font-size: 10.5px; padding: 0 6px; }
     .cp-where { font-size: 11.5px; }
+    .cp-id { min-width: 0; overflow: hidden; }
+    .cp-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* 双条竖排窄条：贴右、上下堆叠、永远可见 */
+    .cp-bars { flex: none; width: 96px; flex-direction: column; gap: 4px; margin: 0 2px 0 auto; }
+    .cp-bars .cp-bar-wrap { width: 100%; }
+    .cp-bars .cp-bar-label { font-size: 10.5px; white-space: nowrap; }
+    .cp-bars .cp-bar { height: 5px; margin-top: 2px; }
+    #charPanel.collapsed .cp-bars { gap: 3px; }
+    #charPanel.collapsed .cp-bar { height: 4px; }
 
     /* 小字可读性 +1px */
     .msg { font-size: 15.5px; line-height: 1.75; }
@@ -700,14 +726,13 @@
 
   /* ---------- 电脑端（宽屏）：手机适配不影响桌面，恢复 V1 常驻布局 ---------- */
   @media (min-width: 761px) {
-    /* 角色卡：真元/气血回到上下竖排大条，内容永远展开、折叠钮隐藏 */
-    .cp-bars { flex-direction: column; gap: 7px; margin-top: 7px; }
+    /* 角色卡：双条回到名字下方的整行竖排大条（flex-basis 100% 换行占整行），内容永远展开、折叠钮隐藏 */
+    .cp-bars { flex: 1 1 100%; flex-direction: column; gap: 7px; margin-top: 7px; }
     .cp-bars .cp-bar-wrap { flex: 1; min-width: 170px; }
     .cp-bars .cp-bar-label { font-size: 11px; }
     .cp-bars .cp-bar { height: 6px; margin-top: 3px; }
     #charPanel .cp-toggle { display: none; }
     #charPanel.collapsed .cp-collapse { display: block; }
-    #charPanel.collapsed .cp-top .cp-where { display: inline; }
     #charPanel.collapsed .cp-bars { gap: 7px; margin-top: 7px; }
     #charPanel.collapsed .cp-bar-label { font-size: 11px; }
     #charPanel.collapsed .cp-bar { height: 6px; margin-top: 3px; }
@@ -751,21 +776,23 @@
       <span class="cp-tag" id="cpIdentity">未开局</span>
     </div>
     <span class="cp-spacer"></span>
-    <span class="cp-item cp-where">🏞 <span id="cpLocation">—</span></span>
-    <span class="cp-item cp-where">⏳ <span id="cpTime">—</span></span>
-  </div>
-  <!-- 真元 / 气血：并排、永远可见（折叠时收紧凑） -->
-  <div class="cp-bars">
-    <div class="cp-bar-wrap">
-      <span class="cp-bar-label">真元 <span id="cpZYText">—</span></span>
-      <div class="cp-bar"><div class="cp-bar-fill" id="cpZYFill"></div></div>
-    </div>
-    <div class="cp-bar-wrap">
-      <span class="cp-bar-label">气血 <span id="cpQIText">—</span></span>
-      <div class="cp-bar qi"><div class="cp-bar-fill qi" id="cpQIFill"></div></div>
+    <!-- 真元 / 气血：移到名字右侧、上下竖排，永远可见（折叠时收紧凑） -->
+    <div class="cp-bars">
+      <div class="cp-bar-wrap">
+        <span class="cp-bar-label">真元 <span id="cpZYText">—</span></span>
+        <div class="cp-bar"><div class="cp-bar-fill" id="cpZYFill"></div></div>
+      </div>
+      <div class="cp-bar-wrap">
+        <span class="cp-bar-label">气血 <span id="cpQIText">—</span></span>
+        <div class="cp-bar qi"><div class="cp-bar-fill qi" id="cpQIFill"></div></div>
+      </div>
     </div>
   </div>
   <div class="cp-collapse">
+    <div class="cp-row cp-where-row">
+      <span class="cp-item cp-where">🏞 <span id="cpLocation">—</span></span>
+      <span class="cp-item cp-where">⏳ <span id="cpTime">—</span></span>
+    </div>
     <div class="cp-row">
       <span class="cp-item">🗡 修为：<span id="cpRealm">—</span></span>
       <span class="cp-item">💎 元石：<span id="cpYuan">—</span></span>
@@ -1279,14 +1306,8 @@ function renderActions() {
   } else {
     const raw = lastRawAi || ((state.history.filter(m => m.role === "assistant").pop() || {}).content || "");
     const acts = extractActions(raw);
-    /* 行动选项卡：AI 的【行动选项】渲染成底部常驻按钮，是唯一行动入口 */
-    if (acts.length) {
-      const g = document.createElement("div");
-      g.className = "grp";
-      g.textContent = "🧭 行动选项";
-      actionsEl.appendChild(g);
-      for (const a of acts) actionsEl.appendChild(makeBtn(a, { fromBtn: true }));
-    }
+    /* 行动选项卡：AI 的【行动选项】渲染成底部折叠条（默认收起，不挡剧情），点开才显示选项按钮，是唯一行动入口 */
+    if (acts.length) actionsEl.appendChild(actToggle(acts));
     /* 兜底：折叠进「更多行动」默认收起；有选项时是快捷工具，没选项时按剧情智能兜底 */
     const fallback = acts.length ? utilityActions() : smartFallbackActions(raw);
     if (fallback.length) actionsEl.appendChild(moreToggle(fallback));
@@ -1313,6 +1334,32 @@ function moreToggle(actions) {
   });
   const wrap = document.createElement("div");
   wrap.className = "more-wrap";
+  wrap.appendChild(btn);
+  wrap.appendChild(box);
+  return wrap;
+}
+
+/* 行动选项卡折叠器：AI 的【行动选项】折叠成一条金色细条「🧭 行动选项（N）」，
+   默认收起不挡剧情，点开才显示选项按钮，是唯一行动入口 */
+function actToggle(acts) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "act-toggle";
+  btn.setAttribute("aria-expanded", "false");
+  btn.innerHTML = '<span class="at-label">🧭 行动选项</span><span class="at-count">' + acts.length + '</span><span class="at-arrow">▸</span>';
+  const box = document.createElement("div");
+  box.className = "act-box";
+  box.hidden = true;
+  for (const a of acts) box.appendChild(makeBtn(a, { fromBtn: true }));
+  btn.addEventListener("click", () => {
+    const open = box.hidden;
+    box.hidden = !open;
+    btn.classList.toggle("open", open);
+    btn.querySelector(".at-arrow").textContent = open ? "▾" : "▸";
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  const wrap = document.createElement("div");
+  wrap.className = "act-wrap";
   wrap.appendChild(btn);
   wrap.appendChild(box);
   return wrap;
