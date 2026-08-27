@@ -679,6 +679,31 @@
     header button { padding: 8px 2px; font-size: 11px; }
     #importText { height: 120px; }
   }
+
+  /* ---------- 电脑端（宽屏）：手机适配不影响桌面，恢复 V1 常驻布局 ---------- */
+  @media (min-width: 761px) {
+    /* 角色卡：真元/气血回到上下竖排大条，内容永远展开、折叠钮隐藏 */
+    .cp-bars { flex-direction: column; gap: 7px; margin-top: 7px; }
+    .cp-bars .cp-bar-wrap { flex: 1; min-width: 170px; }
+    .cp-bars .cp-bar-label { font-size: 11px; }
+    .cp-bars .cp-bar { height: 6px; margin-top: 3px; }
+    #charPanel .cp-toggle { display: none; }
+    #charPanel.collapsed .cp-collapse { display: block; }
+    #charPanel.collapsed .cp-top .cp-where { display: inline; }
+    #charPanel.collapsed .cp-bars { gap: 7px; margin-top: 7px; }
+    #charPanel.collapsed .cp-bar-label { font-size: 11px; }
+    #charPanel.collapsed .cp-bar { height: 6px; margin-top: 3px; }
+
+    /* 轨迹 / 随身：恢复常驻栏，隐藏折叠按钮 */
+    .bar-toggle { display: none !important; }
+    #trail, #hand { display: flex !important; }
+    #trail:empty, #hand:empty { display: none !important; }
+
+    /* 底部操作区：恢复 V1 间距 */
+    footer { padding: 10px 12px calc(12px + env(safe-area-inset-bottom) + var(--kkb, 0px)); }
+    #actions { gap: 8px; margin-bottom: 10px; }
+    #actions .grp { margin-bottom: 6px; }
+  }
 </style>
 </head>
 <body>
