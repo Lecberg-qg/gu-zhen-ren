@@ -794,12 +794,12 @@
     .cp-row + .cp-row { margin-top: 4px; }
     .cp-toggle { min-width: 20px; min-height: 20px; }
     .cp-bars { width: 82px; gap: 1px; }
-    /* 数值文字视觉 5.5px：基础字号 12px + scale(0.46) 绕过手机最小字号限制（直接 font-size:5.5px 会被强制放大）
+    /* 数值文字视觉 7.5px：基础字号 12px + scale(0.625) 绕过手机最小字号限制（直接 font-size:7.5px 会被强制放大）
        行盒 12px 里多出的高度用负 margin 回收，让文字紧贴下方色条（不留大空隙） */
     .cp-bars .cp-bar-label {
       display: inline-block; font-size: 12px; line-height: 1;
-      white-space: nowrap; transform: scale(0.46); transform-origin: left top;
-      margin-bottom: -6.5px;
+      white-space: nowrap; transform: scale(0.625); transform-origin: left top;
+      margin-bottom: -4.5px;
     }
     .cp-bars .cp-bar { height: 4px; margin-top: 0; }
     #charPanel.collapsed .cp-bars { gap: 0; }
