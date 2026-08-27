@@ -23,6 +23,7 @@
     margin: 0 auto;
     height: 100vh;
     height: 100dvh;   /* 手机地址栏折叠时跟随可视高度 */
+    overflow: hidden; /* 整页不滚动，滚动只发生在中间剧情区 main */
   }
 
   /* ---------- 顶栏 ---------- */
@@ -63,7 +64,9 @@
   /* ---------- 场景区 ---------- */
   main {
     flex: 1;
+    min-height: 0;      /* 关键：允许收缩到内容以下，剧情区才能独立滚动而不是把整页撑高 */
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 14px 12px 20px;
     scroll-behavior: smooth;
     overscroll-behavior-y: contain;   /* 手机滚到底不回弹 */
@@ -88,15 +91,22 @@
     word-break: break-word;
   }
   .msg.ai {
-    background: #131820;
-    border: 1px solid #232a36;
+    background: #141b25;
+    border: 1px solid #26303d;
     border-left: 3px solid #8a6d2f;
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 12px 14px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,.22);
+  }
+  .msg.ai::before {  /* 顶部金色高光线 */
+    content: "";
+    position: absolute; top: 0; left: 12px; right: 12px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(232,197,106,.45), transparent);
   }
   .msg.ai .label {
     font-size: 11px;
-    color: #8f98a3;
+    color: #9aa3af;
     margin-bottom: 6px;
     letter-spacing: 1px;
   }
@@ -111,22 +121,25 @@
 
   /* ---------- 底部操作区 ---------- */
   footer {
+    flex: none;         /* 底部操作区固定高度，不参与收缩 */
+    position: relative;
+    z-index: 2;         /* 盖住剧情区滚入底部的文本，避免文字露出 */
     border-top: 1px solid #2a2f38;
     background: #0e1217;
-    padding: 10px 12px calc(12px + env(safe-area-inset-bottom) + var(--kkb, 0px));   /* 底部安全区 + 软键盘高度 */
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom) + var(--kkb, 0px));   /* 底部安全区 + 软键盘高度 */
   }
   #actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 7px;
+    margin-bottom: 8px;
   }
   #actions .grp {
     width: 100%;
     font-size: 11px;
     color: #b9a05c;
     letter-spacing: 1px;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
   }
   .act-btn {
     position: relative;
@@ -278,7 +291,9 @@
   .cp-item { color: #8f98a3; min-width: 0; }
   .cp-item span { color: #c8cdd4; }
   .cp-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 34%; }
-  .cp-bar-wrap { flex: 1; min-width: 170px; }
+  /* 真元/气血双条：并排、永远可见；折叠时变紧凑 */
+  .cp-bars { display: flex; gap: 10px; margin-top: 7px; }
+  .cp-bars .cp-bar-wrap { flex: 1; min-width: 0; }
   .cp-bar-label { font-size: 11px; color: #8f98a3; }
   .cp-bar {
     height: 6px; background: #0b0e12; border: 1px solid #2a2f38;
@@ -292,6 +307,22 @@
   .cp-bar.qi { border-color: #4a2020; }
   .cp-bar-fill.qi { background: linear-gradient(90deg, #8a1f1f, #e85656); }
   .cp-empty { opacity: .45; }
+
+  /* 角色卡折叠：手机默认收起，给剧情区让出空间；▾/▸ 切换 */
+  .cp-toggle {
+    background: transparent; border: none; color: #8f98a3;
+    font-size: 14px; line-height: 1; cursor: pointer;
+    padding: 4px 6px; border-radius: 6px; flex: none;
+    transition: transform .2s, color .15s;
+  }
+  .cp-toggle:hover { color: #e8c56a; background: #1d242e; }
+  #charPanel.collapsed .cp-collapse { display: none; }
+  #charPanel.collapsed .cp-toggle { transform: rotate(-90deg); }
+  /* 折叠态：藏位置/时间，双条收紧凑 */
+  #charPanel.collapsed .cp-top .cp-where { display: none; }
+  #charPanel.collapsed .cp-bars { gap: 8px; margin-top: 5px; }
+  #charPanel.collapsed .cp-bar-label { font-size: 10.5px; }
+  #charPanel.collapsed .cp-bar { height: 5px; margin-top: 2px; }
 
   /* ---------- 名片化补充 ---------- */
   #charPanel { position: relative; cursor: pointer; }
@@ -347,12 +378,25 @@
     100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
   }
 
-  /* 去过的地方轨迹 */
+  /* 折叠按钮（去过 / 随身 共用）：默认收起，点开展开 */
+  .bar-toggle {
+    display: block; width: 100%;
+    background: #141a22; border: 1px solid #2a2f38; border-radius: 7px;
+    color: #a8b3c0; font-size: 12px; cursor: pointer; text-align: left;
+    padding: 8px 10px; margin-bottom: 8px;
+  }
+  .bar-toggle[hidden] { display: none; }
+  .bar-toggle:hover { border-color: #e8c56a; color: #e8c56a; }
+  .bar-toggle .bt-arrow { float: right; color: #8f98a3; }
+
+  /* 去过的地方轨迹（默认折叠，.open 展开） */
   #trail {
-    display: flex; gap: 6px; overflow-x: auto;
+    display: none; gap: 6px; overflow-x: auto;
     padding: 6px 12px; border-bottom: 1px solid #232a36;
     background: #0f141a; font-size: 12px; flex: none;
   }
+  #trail.open { display: flex; }
+  #trail:empty { display: none; }
   .trail-title { color: #8f98a3; white-space: nowrap; line-height: 24px; }
   .trail-chip {
     background: #161b22; border: 1px solid #2a2f38; border-radius: 12px;
@@ -360,8 +404,10 @@
   }
   .trail-chip:hover { border-color: #e8c56a; color: #e8c56a; }
 
-  /* 随身物品栏 */
-  #hand { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px; }
+  /* 随身物品栏（默认折叠，.open 展开） */
+  #hand { display: none; gap: 8px; overflow-x: auto; padding: 4px 0 10px; }
+  #hand.open { display: flex; }
+  #hand:empty { display: none; }
   .hand-title { font-size: 11px; color: #8f98a3; line-height: 30px; white-space: nowrap; }
   .hand-card {
     background: #161b22; border: 1px solid #3a4150; border-radius: 8px;
@@ -374,8 +420,8 @@
 
   /* 回合变化色块 / 当前局面列表（嵌在场景流正文里） */
   .chg-card {
-    border: 1px solid #2a2f38; border-radius: 8px;
-    padding: 8px 10px; margin: 10px 0; background: #10151b;
+    border: 1px solid #26303d; border-radius: 8px;
+    padding: 6px 10px; margin: 10px 0; background: #0d1218;
   }
   .chg-item { padding: 2px 0; font-size: 13px; }
   .chg-item.gain { color: #7dd3a8; }
@@ -386,16 +432,16 @@
   .chg-item.other { color: #c8cdd4; }
 
   .sit-card {
-    border-left: 3px solid #8a6d2f; background: #141a22;
-    border-radius: 6px; padding: 8px 12px; margin: 10px 0;
+    border-left: 3px solid #8a6d2f; background: #10161d;
+    border-radius: 6px; padding: 6px 10px; margin: 10px 0;
   }
   .sit-title { font-size: 11px; color: #8f98a3; letter-spacing: 1px; margin-bottom: 4px; }
   .sit-item { font-size: 13.5px; padding: 2px 0; }
 
   /* 参考行动：可点击选项卡（点一下直接作为行动发送） */
   .ref-card {
-    border-left: 3px solid #b9a05c; background: #141a22;
-    border-radius: 6px; padding: 10px 12px; margin: 10px 0;
+    border-left: 3px solid #b9a05c; background: #10161d;
+    border-radius: 6px; padding: 8px 10px; margin: 10px 0;
   }
   .ref-title { font-size: 11px; color: #b9a05c; letter-spacing: 1px; margin-bottom: 8px; }
   .ref-btns { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -571,6 +617,8 @@
     /* 触摸目标 ≥40px + 按压反馈（手机上无 hover） */
     .trail-chip { min-height: 36px; display: inline-flex; align-items: center; padding: 6px 12px; }
     .hand-card { min-height: 40px; display: inline-flex; align-items: center; }
+    .cp-toggle { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+    #charPanel.collapsed { padding: 6px 12px; }
     .ref-btn { min-height: 40px; padding: 8px 12px; font-size: 14px; }
     .wiz-btn { min-height: 44px; padding: 10px 16px; }
     .panel .row button { min-height: 44px; padding: 10px 18px; }
@@ -590,11 +638,12 @@
     .panel input[type=text], .panel input[type=password], .panel textarea { font-size: 16px; }
     .wiz-custom input { font-size: 16px; }
 
-    /* 角色面板精简：血条整行、长蛊虫整行换行 */
+    /* 角色面板精简：双条并排、折叠态紧凑、提示行手机隐藏 */
     #charPanel { padding: 8px 12px; }
     .cp-row + .cp-row { margin-top: 5px; }
-    .cp-bar-wrap { flex: 1 1 100%; min-width: 0; }
+    .cp-bars { margin-top: 6px; }
     .cp-ellipsis { max-width: 100%; }
+    .cp-hint { display: none; }
 
     /* 小字可读性 +1px */
     .msg { font-size: 15.5px; line-height: 1.75; }
@@ -649,44 +698,52 @@
 <!-- 角色名片（由 AI 每回合输出的【状态快照】驱动；点击看完整状态） -->
 <div id="charPanel" class="cp-empty" title="点击查看完整状态">
   <div class="cp-row cp-top">
+    <button class="cp-toggle" id="cpToggle" type="button" title="展开 / 收起角色卡">▾</button>
     <span class="cp-avatar">🧬</span>
     <div class="cp-id">
       <span class="cp-name" id="cpName">—</span>
       <span class="cp-tag" id="cpIdentity">未开局</span>
     </div>
     <span class="cp-spacer"></span>
-    <span class="cp-item">🏞 <span id="cpLocation">—</span></span>
-    <span class="cp-item">⏳ <span id="cpTime">—</span></span>
+    <span class="cp-item cp-where">🏞 <span id="cpLocation">—</span></span>
+    <span class="cp-item cp-where">⏳ <span id="cpTime">—</span></span>
   </div>
-  <div class="cp-row">
-    <span class="cp-item">🗡 修为：<span id="cpRealm">—</span></span>
+  <!-- 真元 / 气血：并排、永远可见（折叠时收紧凑） -->
+  <div class="cp-bars">
     <div class="cp-bar-wrap">
       <span class="cp-bar-label">真元 <span id="cpZYText">—</span></span>
       <div class="cp-bar"><div class="cp-bar-fill" id="cpZYFill"></div></div>
     </div>
-  </div>
-  <div class="cp-row">
     <div class="cp-bar-wrap">
       <span class="cp-bar-label">气血 <span id="cpQIText">—</span></span>
       <div class="cp-bar qi"><div class="cp-bar-fill qi" id="cpQIFill"></div></div>
     </div>
   </div>
-  <div class="cp-row cp-bottom">
-    <span class="cp-item">💎 元石：<span id="cpYuan">—</span></span>
-    <span class="cp-item cp-ellipsis">🐛 蛊虫：<span id="cpGu">—</span></span>
-    <span class="cp-item">🩹 伤势：<span id="cpWound">—</span></span>
-    <span class="cp-item cp-ellipsis">🧰 材料：<span id="cpMat">—</span></span>
-    <span class="cp-item">📛 <span id="cpFame">—</span></span>
+  <div class="cp-collapse">
+    <div class="cp-row">
+      <span class="cp-item">🗡 修为：<span id="cpRealm">—</span></span>
+      <span class="cp-item">💎 元石：<span id="cpYuan">—</span></span>
+    </div>
+    <div class="cp-row">
+      <span class="cp-item cp-ellipsis">🐛 蛊虫：<span id="cpGu">—</span></span>
+      <span class="cp-item">🩹 伤势：<span id="cpWound">—</span></span>
+    </div>
+    <div class="cp-row">
+      <span class="cp-item cp-ellipsis">🧰 材料：<span id="cpMat">—</span></span>
+      <span class="cp-item">📛 <span id="cpFame">—</span></span>
+    </div>
+    <div class="cp-hint">点击查看完整状态 ▾</div>
   </div>
-  <div class="cp-hint">点击查看完整状态 ▾</div>
 </div>
 
-<!-- 去过的地方轨迹（本地累积，点击可作行动"前往"） -->
+<!-- 去过的地方轨迹（本地累积，点击可作行动"前往"；默认折叠） -->
+<button id="trailToggle" class="bar-toggle" type="button" title="展开 / 收起去过的地方" hidden>🗺 去过 <span id="trailCount">0</span><span class="bt-arrow">▸</span></button>
 <div id="trail"></div>
 
 <main id="scene"></main>
 
 <footer>
+  <button id="handToggle" class="bar-toggle" type="button" title="展开 / 收起随身物品" hidden>🎒 随身 <span id="handCount">0</span><span class="bt-arrow">▸</span></button>
   <div id="hand"></div>
   <div id="actions"></div>
   <div id="inputBar">
@@ -1051,6 +1108,8 @@ const actionsEl = document.getElementById("actions");
 const freeInput = document.getElementById("freeInput");
 const btnSend = document.getElementById("btnSend");
 const phaseBadge = document.getElementById("phaseBadge");
+const trailToggle = document.getElementById("trailToggle");
+const handToggle = document.getElementById("handToggle");
 
 /* ---------- 渲染 ---------- */
 function esc(s) {
@@ -1643,8 +1702,9 @@ function aiBodyHtml(content) {
 function renderTrail() {
   const el = document.getElementById("trail");
   if (!el) return;
-  if (!ledger.visited || !ledger.visited.length) { el.style.display = "none"; el.innerHTML = ""; return; }
-  el.style.display = "";
+  if (!ledger.visited || !ledger.visited.length) { el.innerHTML = ""; trailToggle.hidden = true; return; }
+  trailToggle.hidden = false;
+  document.getElementById("trailCount").textContent = ledger.visited.length;
   el.innerHTML = '<span class="trail-title">🗺 去过</span>' +
     ledger.visited.map((v) => '<span class="trail-chip" title="作为行动前往">' + esc(v) + '</span>').join("");
   el.querySelectorAll(".trail-chip").forEach((c) => {
@@ -1655,9 +1715,11 @@ function renderTrail() {
 function renderHand() {
   const el = document.getElementById("hand");
   if (!el) return;
-  if (!ledgerHasData()) { el.innerHTML = ""; return; }
+  if (!ledgerHasData()) { el.innerHTML = ""; handToggle.hidden = true; return; }
   const gu = ledger.gu || [], mat = ledger.materials || [];
-  if (!gu.length && !mat.length) { el.innerHTML = '<div class="hand-empty">🈳 空手</div>'; return; }
+  if (!gu.length && !mat.length) { el.innerHTML = ""; handToggle.hidden = true; return; }
+  handToggle.hidden = false;
+  document.getElementById("handCount").textContent = gu.length + mat.length;
   let h = '<span class="hand-title">🎒 随身</span>';
   for (const g of gu) h += '<div class="hand-card hand-gu">🐛 ' + esc(g) + '</div>';
   for (const m of mat) h += '<div class="hand-card hand-mat">🧰 ' + esc(m) + '</div>';
@@ -1985,6 +2047,45 @@ document.getElementById("btnImport").addEventListener("click", () => {
   document.getElementById("importOverlay").classList.add("show");
 });
 document.getElementById("charPanel").addEventListener("click", showCharDetail);
+
+/* 角色卡折叠：手机默认收起（给剧情让空间），▾/▸ 手动切换，状态记本机 */
+(function () {
+  const panel = document.getElementById("charPanel");
+  const toggle = document.getElementById("cpToggle");
+  const apply = (c) => {
+    panel.classList.toggle("collapsed", c);
+    toggle.textContent = c ? "▸" : "▾";
+  };
+  toggle.addEventListener("click", (e) => {
+    e.stopPropagation();   /* 不触发角色卡点击 → 详情层 */
+    const c = !panel.classList.contains("collapsed");
+    apply(c);
+    try { localStorage.setItem("gzr_v2_cp_collapsed", c ? "1" : "0"); } catch (err) {}
+  });
+  let saved = null;
+  try { saved = localStorage.getItem("gzr_v2_cp_collapsed"); } catch (err) {}
+  apply(saved === null ? window.matchMedia("(max-width: 760px)").matches : saved === "1");
+})();
+
+/* 折叠按钮通用逻辑：去过 / 随身 共用（手机默认收起，点开/收起记本机） */
+function wireBarToggle(btn, content, lsKey) {
+  if (!btn || !content) return;
+  const arrow = btn.querySelector(".bt-arrow");
+  const apply = (c) => {
+    content.classList.toggle("open", !c);
+    if (arrow) arrow.textContent = c ? "▸" : "▾";
+  };
+  btn.addEventListener("click", () => {
+    const c = content.classList.contains("open");
+    apply(c);
+    try { localStorage.setItem(lsKey, c ? "1" : "0"); } catch (err) {}
+  });
+  let saved = null;
+  try { saved = localStorage.getItem(lsKey); } catch (err) {}
+  apply(saved === null ? window.matchMedia("(max-width: 760px)").matches : saved === "1");
+}
+wireBarToggle(trailToggle, document.getElementById("trail"), "gzr_v2_trail_collapsed");
+wireBarToggle(handToggle, document.getElementById("hand"), "gzr_v2_hand_collapsed");
 document.getElementById("detailClose").addEventListener("click", () => document.getElementById("detailOverlay").classList.remove("show"));
 document.getElementById("detailOverlay").addEventListener("click", (e) => {
   if (e.target === document.getElementById("detailOverlay")) document.getElementById("detailOverlay").classList.remove("show");
