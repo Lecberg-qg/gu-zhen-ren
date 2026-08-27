@@ -794,7 +794,13 @@
     .cp-row + .cp-row { margin-top: 4px; }
     .cp-toggle { min-width: 20px; min-height: 20px; }
     .cp-bars { width: 82px; gap: 1px; }
-    .cp-bars .cp-bar-label { font-size: 3.3px; line-height: 1; white-space: nowrap; }
+    /* 数值文字用 transform scale 缩小：绕开手机浏览器最小字号限制（font-size 低于 ~8px 会被强制放大）
+       基础字号保持 12px 稳定渲染，scale(0.28) 视觉约 3.4px；wrap 定高裁剪回收纵向空间 */
+    .cp-bars .cp-bar-wrap { height: 8px; overflow: hidden; }
+    .cp-bars .cp-bar-label {
+      display: inline-block; font-size: 12px; line-height: 1;
+      white-space: nowrap; transform: scale(0.28); transform-origin: left top;
+    }
     .cp-bars .cp-bar { height: 4px; margin-top: 0; }
     #charPanel.collapsed .cp-bars { gap: 0; }
     #charPanel.collapsed .cp-bar { height: 3px; margin-top: 0; }
