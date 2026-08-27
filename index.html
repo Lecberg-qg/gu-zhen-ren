@@ -1446,12 +1446,14 @@ function extractActions(text) {
   const actions = [];
   const idx = text.lastIndexOf("【行动选项】");
   if (idx >= 0) {
-    const block = text.slice(idx);
-    const re = /^\s*\d+[.、．]\s*(.+?)\s*$/gm;
+    /* 先剥 markdown 加粗/行内代码/星号，避免 **1. 文本** 这类被正则漏掉 */
+    const block = text.slice(idx).replace(/\*+|__+|`/g, "");
+    /* 支持：1. / 1、 / 1． / - / • / · / ①②③ 等常见列表前缀 */
+    const re = /^\s*(?:\d+\s*[.、．]|[-–—•·*]\s*|[①-⑨]\s*)\s*(.+?)\s*$/gm;
     let r;
     while ((r = re.exec(block)) !== null) {
       const t = r[1].trim();
-      if (t) actions.push(t);
+      if (t && !/^【.+】$/.test(t)) actions.push(t);
     }
   }
   return actions.slice(0, 4);
@@ -1492,7 +1494,17 @@ const TIME_GROUPS = [
 
 function renderActions() {
   actionsEl.innerHTML = "";
-  if (busy) return;
+  /* AI 推演期间给占位条，避免底部空白像「选项消失」 */
+  if (busy) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "act-toggle";
+    b.disabled = true;
+    b.style.opacity = ".55";
+    b.innerHTML = '<span class="at-label">🧭 世界推演中…</span>';
+    actionsEl.appendChild(b);
+    return;
+  }
   if (state.phase === "start" || state.phase === "time") {
     const g = document.createElement("div");
     g.className = "grp";
@@ -1506,11 +1518,13 @@ function renderActions() {
   } else {
     const raw = lastRawAi || ((state.history.filter(m => m.role === "assistant").pop() || {}).content || "");
     const acts = extractActions(raw);
-    /* 行动选项卡：AI 的【行动选项】渲染成底部折叠条（默认收起，不挡剧情），点开才显示选项按钮，是唯一行动入口 */
-    if (acts.length) actionsEl.appendChild(actToggle(acts));
-    /* 兜底：折叠进「更多行动」默认收起；有选项时是快捷工具，没选项时按剧情智能兜底 */
+    /* 兜底行动：有 AI 选项时是快捷工具，没选项时按剧情智能兜底 */
     const fallback = acts.length ? utilityActions() : smartFallbackActions(raw);
-    if (fallback.length) actionsEl.appendChild(moreToggle(fallback));
+    /* 行动选项卡永不消失：AI 的【行动选项】优先；没有就用兜底行动填进去。
+       折叠条（默认收起，不挡剧情）点开展示按钮，是唯一行动入口 */
+    const actionBtns = acts.length ? acts : fallback;
+    if (actionBtns.length) actionsEl.appendChild(actToggle(actionBtns));
+    if (acts.length && fallback.length) actionsEl.appendChild(moreToggle(fallback));
   }
 }
 
@@ -2247,11 +2261,10 @@ function send(text, opts) {
   flashBtn(btnSend);
   state.history.push({ role: "user", content: text });
   saveState();
-  renderAll();
   busy = true;
   btnSend.disabled = true;
   freeInput.value = "";
-  actionsEl.innerHTML = "";
+  renderAll();   // busy=true → 行动区显示「世界推演中…」占位，不让底部空白
   /* 乐观反馈：按钮发起的行动立即给确认，AI 流式回来后替换 */
   const waitText = (opts && opts.fromBtn) ? "🧭 正在行动：" + text + " …" : "… 世界在推演中";
   const wait = document.createElement("div");
