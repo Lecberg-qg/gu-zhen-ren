@@ -228,21 +228,6 @@
   .act-box { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
   .act-box[hidden] { display: none; }
 
-  /* 「更多行动」折叠条：快捷工具与智能兜底独立一条，不与 AI 选项融合 */
-  .more-wrap { width: 100%; }
-  .more-toggle {
-    width: 100%;
-    display: flex; align-items: center; justify-content: space-between;
-    background: #141a22; border: 1px solid #2a2f38; border-radius: 7px;
-    color: #a8b3c0; font-size: 12px; cursor: pointer;
-    padding: 8px 10px;
-  }
-  .more-toggle:hover { border-color: #e8c56a; color: #e8c56a; }
-  .more-toggle .mt-arrow { color: #8f98a3; }
-  .more-toggle.open .mt-arrow { color: #e8c56a; }
-  .more-box { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
-  .more-box[hidden] { display: none; }
-
   #inputBar {
     display: flex;
     gap: 8px;
@@ -1074,7 +1059,7 @@
 3. 选项文本
 ```
 
-【行动选项】是唯一的行动入口，网页版会渲染成**底部折叠条「🧭 行动选项（N）」**（默认收起，点开即显示选项按钮，点击即行动）；正文里不要再单独给行动建议列表。不是回合场景时（纯结算、存档、问答等）可以不输出该块。
+【行动选项】是唯一的行动入口，网页版会渲染成**底部折叠条「🧭 行动选项（N）」**（默认收起，点开即显示选项按钮，点击即行动，网页底部的快捷工具与智能兜底会与你的选项合并展示）；正文里不要再单独给行动建议列表。不是回合场景时（纯结算、存档、问答等）可以不输出该块。
 
 ⑤【状态快照】（供网页版面板解析）每回合结束时额外输出一个【状态快照】块，一行 JSON 完整快照，格式固定：
 
@@ -1520,11 +1505,11 @@ function renderActions() {
     const acts = extractActions(raw);
     /* 兜底行动：有 AI 选项时是快捷工具，没选项时按剧情智能兜底 */
     const fallback = acts.length ? utilityActions() : smartFallbackActions(raw);
-    /* 分离结构：AI 的【行动选项】是主选项卡（永不消失）；
-       快捷工具/智能兜底独立进「更多行动」折叠条，不与 AI 选项融合 */
-    const actionBtns = acts.length ? acts : fallback;
-    if (actionBtns.length) actionsEl.appendChild(actToggle(actionBtns));
-    if (acts.length && fallback.length) actionsEl.appendChild(moreToggle(fallback));
+    /* 融合兜底：AI 的【行动选项】+ 兜底行动去重合并进同一个选项卡。
+       点开一次全部可见，永不消失，是唯一行动入口 */
+    const merged = [];
+    for (const a of acts.concat(fallback)) if (!merged.includes(a)) merged.push(a);
+    if (merged.length) actionsEl.appendChild(actToggle(merged));
   }
 }
 
@@ -1549,31 +1534,6 @@ function actToggle(acts) {
   });
   const wrap = document.createElement("div");
   wrap.className = "act-wrap";
-  wrap.appendChild(btn);
-  wrap.appendChild(box);
-  return wrap;
-}
-
-/* 「更多行动」折叠条：快捷工具与智能兜底独立一条，默认收起，不挤占 AI 行动选项卡 */
-function moreToggle(actions) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "more-toggle";
-  btn.setAttribute("aria-expanded", "false");
-  btn.innerHTML = '<span>更多行动</span><span class="mt-arrow">▸</span>';
-  const box = document.createElement("div");
-  box.className = "more-box";
-  box.hidden = true;
-  for (const a of actions) box.appendChild(makeBtn(a, { fromBtn: true }));
-  btn.addEventListener("click", () => {
-    const open = box.hidden;
-    box.hidden = !open;
-    btn.classList.toggle("open", open);
-    btn.querySelector(".mt-arrow").textContent = open ? "▾" : "▸";
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-  });
-  const wrap = document.createElement("div");
-  wrap.className = "more-wrap";
   wrap.appendChild(btn);
   wrap.appendChild(box);
   return wrap;
