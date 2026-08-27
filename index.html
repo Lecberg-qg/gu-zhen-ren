@@ -60,6 +60,18 @@
     cursor: pointer;
   }
   header button:hover { border-color: #e8c56a; color: #e8c56a; }
+  /* ☰ 菜单钮：只在手机显示；桌面隐藏 */
+  header .hdr-toggle {
+    display: none;
+    width: 34px; height: 34px;
+    align-items: center; justify-content: center;
+    font-size: 15px; line-height: 1; flex: none;
+  }
+  header .hdr-toggle:hover { border-color: #e8c56a; color: #e8c56a; }
+  /* 标题区：桌面用 margin-right:auto 把功能按钮推右侧；手机占整行（见媒体查询） */
+  .hdr-top { display: flex; align-items: center; gap: 8px; margin-right: auto; }
+  /* 功能按钮容器：桌面常驻一排；手机折叠（见媒体查询） */
+  .hdr-btns { display: flex; align-items: center; gap: 8px; }
 
   /* ---------- 场景区 ---------- */
   main {
@@ -197,6 +209,21 @@
       0 0 0 rgba(0,0,0,0);
   }
   .act-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* 折叠的兜底行动：「更多行动」默认收起，点开展开 */
+  .more-wrap { width: 100%; }
+  .more-toggle {
+    width: 100%;
+    display: flex; align-items: center; justify-content: space-between;
+    background: #141a22; border: 1px solid #2a2f38; border-radius: 7px;
+    color: #a8b3c0; font-size: 12px; cursor: pointer;
+    padding: 8px 10px;
+  }
+  .more-toggle:hover { border-color: #e8c56a; color: #e8c56a; }
+  .more-toggle .mt-arrow { color: #8f98a3; }
+  .more-toggle.open .mt-arrow { color: #e8c56a; }
+  .more-box { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
+  .more-box[hidden] { display: none; }
 
   #inputBar {
     display: flex;
@@ -371,7 +398,7 @@
     30% { color: #e06c6c; text-shadow: 0 0 6px rgba(224,108,108,.8); }
   }
   /* 行动按钮点击闪击（攻击感） */
-  .act-btn.flash, .ref-btn.flash { animation: btnFlash .22s ease-out; }
+  .act-btn.flash { animation: btnFlash .22s ease-out; }
   @keyframes btnFlash {
     0% { box-shadow: 0 0 0 rgba(255,255,255,0); }
     40% { box-shadow: 0 0 0 4px rgba(255,233,163,.9); border-color: #fff2c0; }
@@ -437,31 +464,6 @@
   }
   .sit-title { font-size: 11px; color: #8f98a3; letter-spacing: 1px; margin-bottom: 4px; }
   .sit-item { font-size: 13.5px; padding: 2px 0; }
-
-  /* 参考行动：可点击选项卡（点一下直接作为行动发送） */
-  .ref-card {
-    border-left: 3px solid #b9a05c; background: #10161d;
-    border-radius: 6px; padding: 8px 10px; margin: 10px 0;
-  }
-  .ref-title { font-size: 11px; color: #b9a05c; letter-spacing: 1px; margin-bottom: 8px; }
-  .ref-btns { display: flex; flex-wrap: wrap; gap: 8px; }
-  .ref-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: linear-gradient(180deg, #2b2413 0%, #1b160c 60%, #141008 100%);
-    border: 1px solid #6f5a26; border-radius: 8px;
-    color: #e8c56a; font-size: 13px; font-weight: 600; letter-spacing: .3px;
-    padding: 8px 12px; cursor: pointer; text-align: left;
-    text-shadow: 0 1px 2px rgba(0,0,0,.6);
-    box-shadow: 0 1px 0 rgba(240,217,138,.15) inset, 0 -2px 4px rgba(0,0,0,.4) inset, 0 2px 5px rgba(0,0,0,.5);
-  }
-  .ref-btn .ref-ic { font-size: 14px; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); }
-  .ref-btn:hover {
-    background: linear-gradient(180deg, #42360f 0%, #2b2413 60%, #1b160c 100%);
-    border-color: #c9a23e; color: #ffe9a3;
-    box-shadow: 0 1px 0 rgba(255,233,163,.2) inset, 0 0 10px rgba(216,184,92,.25), 0 2px 6px rgba(0,0,0,.55);
-  }
-  .ref-btn:active { transform: translateY(1px); }
-  .ref-btn:disabled { opacity: .45; cursor: not-allowed; }
 
   /* 详情弹层条目 */
   #detailBody { font-size: 13.5px; line-height: 1.8; }
@@ -600,12 +602,24 @@
     .panel { max-height: calc(86dvh - var(--kkb, 0px)); }
     .wizard { max-height: calc(92dvh - var(--kkb, 0px)); }
 
-    /* header 两行：第一行标题+badge，第二行 5 按钮等分满宽 */
+    /* header 两行：第一行标题+badge+☰ 菜单钮，第二行 5 按钮折叠（默认收起） */
     .hdr-top { display: flex; flex: 1 1 100%; align-items: center; gap: 8px; margin-right: auto; }
     header { gap: 6px; }
     header .title { font-size: 14px; }
     header .badge { font-size: 11px; }
-    header button {
+    header .hdr-toggle {
+      display: inline-flex;
+      width: 40px; height: 40px;
+      font-size: 16px;
+    }
+    header .hdr-toggle.open { color: #e8c56a; border-color: #e8c56a; }
+    .hdr-btns {
+      flex: 1 1 100%;
+      display: none;
+      gap: 6px;
+    }
+    .hdr-btns.open { display: flex; }
+    .hdr-btns button {
       flex: 1 1 0;
       min-height: 40px;
       padding: 8px 4px;
@@ -619,7 +633,6 @@
     .hand-card { min-height: 40px; display: inline-flex; align-items: center; }
     .cp-toggle { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
     #charPanel.collapsed { padding: 6px 12px; }
-    .ref-btn { min-height: 40px; padding: 8px 12px; font-size: 14px; }
     .wiz-btn { min-height: 44px; padding: 10px 16px; }
     .panel .row button { min-height: 44px; padding: 10px 18px; }
     .act-btn { min-height: 44px; }
@@ -627,7 +640,7 @@
     #inputBar input, #inputBar button { min-height: 44px; }
     #inputBar button { padding: 0 16px; }
     header button:active, .trail-chip:active, .hand-card:active, .wiz-close:active,
-    .panel .row button:active, .wiz-btn:active, .ref-btn:active {
+    .panel .row button:active, .wiz-btn:active {
       filter: brightness(1.35);
       transform: translateY(1px);
     }
@@ -644,6 +657,11 @@
     .cp-bars { margin-top: 6px; }
     .cp-ellipsis { max-width: 100%; }
     .cp-hint { display: none; }
+    /* 名字区比例收紧：头像/姓名/身份标签/位置时间缩小；真元气血双条不动 */
+    .cp-avatar { font-size: 20px; }
+    .cp-name { font-size: 12.5px; }
+    .cp-tag { font-size: 10.5px; padding: 0 6px; }
+    .cp-where { font-size: 11.5px; }
 
     /* 小字可读性 +1px */
     .msg { font-size: 15.5px; line-height: 1.75; }
@@ -713,11 +731,14 @@
     <span class="title">蛊真人 · 可变全世界模拟器</span>
     <span class="badge" id="phaseBadge">开局</span>
   </div>
-  <button id="btnSound" title="开关音效">🔊</button>
-  <button id="btnSettings">设置</button>
-  <button id="btnNew">新开局</button>
-  <button id="btnExport">导出存档</button>
-  <button id="btnImport">导入存档</button>
+  <button class="hdr-toggle" id="hdrToggle" type="button" title="展开 / 收起功能菜单" aria-expanded="false">☰</button>
+  <div class="hdr-btns" id="hdrBtns">
+    <button id="btnSound" title="开关音效">🔊</button>
+    <button id="btnSettings">设置</button>
+    <button id="btnNew">新开局</button>
+    <button id="btnExport">导出存档</button>
+    <button id="btnImport">导入存档</button>
+  </div>
 </header>
 
 <!-- 角色名片（由 AI 每回合输出的【状态快照】驱动；点击看完整状态） -->
@@ -1010,9 +1031,7 @@
 3. 你的酒虫又饿了
 ```
 
-④【参考行动】标题行【参考行动】必须行首独立成行，下面每行给一个方向，用短横线或编号开头，一行一个（2—4 个）。每个方向必须是一个具体可执行的行动。最后必须说明"也可以直接做任何你想做的事"。不要把参考选项当唯一玩法。网页版会把【参考行动】逐行渲染成可点击选项，所以格式必须可解析
-
-⑤【行动选项】（供网页版按钮解析）每回合末尾必须输出一个【行动选项】块，2-4 个选项，每行一个，格式：
+④【行动选项】（供网页版按钮解析）每回合末尾必须输出一个【行动选项】块，2-4 个选项，每行一个，格式：
 
 ```
 【行动选项】
@@ -1021,9 +1040,9 @@
 3. 选项文本
 ```
 
-不是回合场景时（纯结算、存档、问答等）可以不输出该块。
+【行动选项】是唯一的行动入口，网页版会渲染成底部可点击按钮；正文里不要再单独给行动建议列表。不是回合场景时（纯结算、存档、问答等）可以不输出该块。
 
-⑥【状态快照】（供网页版面板解析）每回合结束时额外输出一个【状态快照】块，一行 JSON 完整快照，格式固定：
+⑤【状态快照】（供网页版面板解析）每回合结束时额外输出一个【状态快照】块，一行 JSON 完整快照，格式固定：
 
 ```
 【状态快照】
@@ -1165,10 +1184,6 @@ function appendMsg(role, content, cls) {
     body.className = "body";
     body.innerHTML = aiBodyHtml(content);
     div.appendChild(body);
-    /* 参考行动选项卡：点击即作为行动发送 */
-    body.querySelectorAll(".ref-btn").forEach((b) => {
-      b.addEventListener("click", () => { Sound.click(); flashBtn(b); send(b.querySelector("span:last-child").textContent, { fromBtn: true }); });
-    });
   }
   scene.appendChild(div);
   scrollBottom();
@@ -1215,8 +1230,16 @@ function extractActions(text) {
   return actions.slice(0, 4);
 }
 function stripActions(text) {
-  /* 按块剥除【行动选项】（含条目行，停在非条目行），不误删其后可能出现的【参考行动】等块 */
+  /* 按块剥除【行动选项】（含条目行，停在非条目行），不误删其后可能出现的其他块（如【状态快照】） */
   return stripBlock(text, "行动选项").replace(/\s+$/, "");
+}
+
+/* 显示用文本：剥掉所有机读/协议块。history 里保留 AI 原文（刷新后底部行动选项靠它提取），渲染时才剥 */
+function stripProtocol(text) {
+  let t = stripActions(text);       // 【行动选项】
+  t = stripSnapshot(t);             // 【状态快照】及之后
+  t = stripBlock(t, "参考行动");     // 兼容旧对话：历史里可能残留【参考行动】块，剥掉不再渲染
+  return t;
 }
 
 /* 开局固定选项（来自提示词，前端硬编码） */
@@ -1256,18 +1279,43 @@ function renderActions() {
   } else {
     const raw = lastRawAi || ((state.history.filter(m => m.role === "assistant").pop() || {}).content || "");
     const acts = extractActions(raw);
+    /* 行动选项卡：AI 的【行动选项】渲染成底部常驻按钮，是唯一行动入口 */
     if (acts.length) {
       const g = document.createElement("div");
-      g.className = "grp"; g.textContent = "行动选项：";
+      g.className = "grp";
+      g.textContent = "🧭 行动选项";
       actionsEl.appendChild(g);
       for (const a of acts) actionsEl.appendChild(makeBtn(a, { fromBtn: true }));
-    } else if (ledgerHasData()) {
-      /* 兜底：AI 这回合没给选项（纯结算/问答/格式不可解析）也不让玩家空手 */
-      const g = document.createElement("div");
-      g.className = "grp"; g.textContent = "可继续：";
-      for (const a of ["继续探索", "查看随身物品", "休整一下"]) actionsEl.appendChild(makeBtn(a, { fromBtn: true }));
     }
+    /* 兜底：折叠进「更多行动」默认收起；有选项时是快捷工具，没选项时按剧情智能兜底 */
+    const fallback = acts.length ? utilityActions() : smartFallbackActions(raw);
+    if (fallback.length) actionsEl.appendChild(moreToggle(fallback));
   }
+}
+
+/* 折叠的兜底行动：「更多行动」默认收起，点开展开，不挤占行动选项卡 */
+function moreToggle(actions) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "more-toggle";
+  btn.setAttribute("aria-expanded", "false");
+  btn.innerHTML = '<span>更多行动</span><span class="mt-arrow">▸</span>';
+  const box = document.createElement("div");
+  box.className = "more-box";
+  box.hidden = true;
+  for (const a of actions) box.appendChild(makeBtn(a, { fromBtn: true }));
+  btn.addEventListener("click", () => {
+    const open = box.hidden;
+    box.hidden = !open;
+    btn.classList.toggle("open", open);
+    btn.querySelector(".mt-arrow").textContent = open ? "▾" : "▸";
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  const wrap = document.createElement("div");
+  wrap.className = "more-wrap";
+  wrap.appendChild(btn);
+  wrap.appendChild(box);
+  return wrap;
 }
 /* ============================================================
    开局向导：模式 → 时间点 → 身份，全卡片点选
@@ -1512,6 +1560,33 @@ function makeBtn(text, opts) {
   return b;
 }
 
+/* 快捷工具：从账本状态给出不依赖剧情、永远可用的行动 */
+function utilityActions() {
+  const acts = [];
+  if (ledger.gu.length || ledger.materials.length) acts.push("查看随身物品");
+  const wounded = ledger.wounds && ledger.wounds !== "无" && ledger.wounds !== "";
+  if (wounded) acts.push("找地方休整疗伤");
+  else if (ledger.zhenMax > 0 && ledger.zhenCur < ledger.zhenMax * 0.3) acts.push("打坐恢复真元");
+  acts.push("继续探索");
+  return acts.slice(0, 4);
+}
+
+/* 兜底按钮生成：AI 没给【行动选项】时，按剧情线索和账本状态智能给出下一步，贴合当前场景 */
+function smartFallbackActions(lastText) {
+  const t = lastText || "";
+  const acts = [];
+  /* 剧情线索启发式：从上一回合正文里找「可去的地方 / 可接触的人」 */
+  const placeHint = /前往|来到|远处|方向|寨|城|山|坊|楼|洞|府|谷|河|林|路|店|场|宫|崖|殿/.test(t);
+  const personHint = /他|她|老者|少年|女子|汉子|守卫|护卫|头领|店主|姑娘|兄弟|长老|村民|商队/.test(t);
+  const talkHint = /说|道|问|打听|消息|传闻|风声|叫他|找她/.test(t);
+  if (placeHint && acts.length < 3) acts.push("循着线索前往查看");
+  if ((personHint || talkHint) && acts.length < 3) acts.push("主动上前打听");
+  /* 追加账本工具，去重，上限 4 个 */
+  for (const a of utilityActions()) if (acts.length < 4 && !acts.includes(a)) acts.push(a);
+  if (!acts.length) acts.push("继续探索");
+  return acts.slice(0, 4);
+}
+
 /* ============================================================
    状态引擎：本地管账（记账 / 校验 / 渲染 / 回填）
    AI 每回合输出【状态快照】，本地解析、硬校验后更新面板。
@@ -1644,10 +1719,13 @@ function ledgerContext() {
   });
 }
 
-/* 从显示文本中剥掉【状态快照】块（机读格式，不给玩家看） */
+/* 从显示文本中剥掉【状态快照】块（机读格式，不给玩家看）。
+   整块标题行一起切（含行首编号，如「⑥【状态快照】」），避免留下悬空编号字符 */
 function stripSnapshot(text) {
   const idx = text.lastIndexOf("【状态快照】");
-  return (idx >= 0 ? text.slice(0, idx) : text).replace(/\s+$/, "");
+  if (idx < 0) return text.replace(/\s+$/, "");
+  let cut = text.lastIndexOf("\n", idx);
+  return (cut >= 0 ? text.slice(0, cut + 1) : "").replace(/\s+$/, "");
 }
 
 /* ---------- 回合块解析与分块渲染 ---------- */
@@ -1701,23 +1779,15 @@ function chgClass(line) {
   return CHG_EMOJI[first] || "other";
 }
 
-/* 参考行动条目：清掉短横线/编号前缀，过滤"也可以直接做任何你想做的事"这类提示行，只留具体行动 */
-function extractRefActions(items) {
-  return items
-    .map((t) => t.replace(/^\s*[-–—•*+]\s+/, "").replace(/^\s*\d+\s*[.、．)）]\s*/, "").trim())
-    .filter((t) => t && !/(任何你?想做的事|直接做任何|自由发挥|随便|不用遵循|不想按|按你?自己的|随你)/.test(t))
-    .slice(0, 4);
-}
-
-/* AI 正文 → 分块 HTML：变化色块 + 局面列表 + 参考行动选项卡 + 剩余正文；找不到块时整段当正文 */
+/* AI 正文 → 分块 HTML：变化色块 + 局面列表 + 行动卡 + 剩余正文；找不到块时整段当正文 */
 function aiBodyHtml(content) {
   const chgs = extractBlock(content, "本回合变化");
   const sits = extractBlock(content, "当前局面");
-  const refs = extractRefActions(extractBlock(content, "参考行动"));
-  let body = content;
+  /* 剥协议块（【行动选项】【状态快照】及旧历史残留的【参考行动】），正文只展示玩家可见内容；
+     行动选项由底部行动选项卡渲染，正文不再重复 */
+  let body = stripProtocol(content);
   if (chgs.length) body = stripBlock(body, "本回合变化");
   if (sits.length) body = stripBlock(body, "当前局面");
-  if (refs.length) body = stripBlock(body, "参考行动");
   let html = textToHtml(body);
   if (chgs.length) {
     html += '<div class="chg-card">' + chgs.map((c) =>
@@ -1726,11 +1796,6 @@ function aiBodyHtml(content) {
   if (sits.length) {
     html += '<div class="sit-card"><div class="sit-title">📌 当前局面</div>' +
       sits.map((s) => '<div class="sit-item">' + esc(s) + '</div>').join("") + '</div>';
-  }
-  if (refs.length) {
-    html += '<div class="ref-card"><div class="ref-title">🖊 参考行动 · 点一下直接行动</div><div class="ref-btns">' +
-      refs.map((r) => '<button type="button" class="ref-btn"><span class="ref-ic">🧭</span><span>' + esc(r) + '</span></button>').join("") +
-      '</div></div>';
   }
   return html;
 }
@@ -1953,7 +2018,7 @@ function send(text, opts) {
       aiDiv = appendMsg("assistant", aiMsg.content);
       bodyEl = aiDiv.querySelector(".body");
     } else {
-      bodyEl.innerHTML = textToHtml(aiMsg.content);
+      bodyEl.innerHTML = textToHtml(stripProtocol(aiMsg.content));
       followBottom();
     }
   }).then(() => {
@@ -1981,9 +2046,9 @@ function send(text, opts) {
       renderHand();
     }
     lastRawAi = aiMsg.content;   // 保留原始输出供底部选项提取（renderActions 用）
-    aiMsg.content = stripSnapshot(aiMsg.content);
-    aiMsg.content = stripActions(aiMsg.content);
     if (aiDiv && aiDiv.parentNode) aiDiv.parentNode.removeChild(aiDiv);
+    /* history 保留 AI 原文（含【行动选项】【状态快照】），刷新/重开后底部行动选项仍可提取；
+       appendMsg → aiBodyHtml 渲染时剥掉协议块，玩家看到的是干净正文 */
     appendMsg("assistant", aiMsg.content, "enter");
     Sound.ding();
     busy = false;
@@ -2073,6 +2138,17 @@ document.getElementById("btnNew").addEventListener("click", newGame);
 document.getElementById("btnSound").addEventListener("click", () => {
   document.getElementById("btnSound").textContent = Sound.toggle() ? "🔇" : "🔊";
 });
+/* ☰ 功能菜单折叠（手机）：点开/收起顶栏按钮 */
+(function () {
+  const toggle = document.getElementById("hdrToggle");
+  const btns = document.getElementById("hdrBtns");
+  if (!toggle || !btns) return;
+  toggle.addEventListener("click", () => {
+    const open = btns.classList.toggle("open");
+    toggle.classList.toggle("open", open);
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+})();
 
 document.getElementById("btnExport").addEventListener("click", () => {
   if (!state.history.length) { alert("还没有内容可导出。"); return; }
