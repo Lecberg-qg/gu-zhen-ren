@@ -60,6 +60,7 @@
     cursor: pointer;
   }
   header button:hover { border-color: #e8c56a; color: #e8c56a; }
+  .st-ic { display: none; }   /* 设置按钮图标：默认隐藏，仅手机端右上角显示 */
   /* ☰ 菜单钮：只在手机显示；桌面隐藏 */
   header .hdr-toggle {
     display: none;
@@ -742,10 +743,64 @@
     #trail, #hand { display: flex !important; }
     #trail:empty, #hand:empty { display: none !important; }
 
+    /* 行动选项卡 / 更多行动：恢复 V1 常驻展开，隐藏折叠条（覆盖 JS 默认的 hidden） */
+    .act-toggle, .more-toggle { display: none !important; }
+    .act-box, .more-box { display: flex !important; }
+
     /* 底部操作区：恢复 V1 间距 */
     footer { padding: 10px 12px calc(12px + env(safe-area-inset-bottom) + var(--kkb, 0px)); }
     #actions { gap: 8px; margin-bottom: 10px; }
     #actions .grp { margin-bottom: 6px; }
+  }
+
+  /* 桌面端（>760px）：恢复原标题行布局 —— [标题][游戏中] …… [⚙设置][🔊][新开局][导出][导入]
+     设置按钮常驻标题行右侧、紧贴功能按钮组（order 排到徽章后，margin-left:auto 推右，
+     hdr-top 用 flex-grow 占满，让 ⚙ 正好落在按钮组左边） */
+  @media (min-width: 761px) {
+    .hdr-top { flex: 1 1 auto; margin-right: 0; }
+    .hdr-top .title { margin-right: 0; }
+    .hdr-top #phaseBadge { order: 1; }
+    .hdr-top #btnSettings { order: 2; margin-left: auto; }
+  }
+
+  /* ============================================================
+     手机端界面压缩（仅 ≤760px 生效，电脑端完全不受影响）
+     目的：给剧情正文腾空间；行动选项【不缩】、真元/气血条【不缩】
+     ============================================================ */
+  @media (max-width: 760px) {
+    /* ① 设置按钮 → 右上角：按钮已直接写在标题行 HTML 里（游戏中徽章左边），无需 JS 搬移。
+          这里把它图标化（40×40），title 的 margin-right:auto 把它和徽章推到右侧，和 ☰ 同排 */
+    .hdr-top { flex: 1 1 auto; }
+    header .title { font-size: 12.5px; }
+    header .badge { font-size: 10px; }
+    .hdr-top #btnSettings {
+      width: 40px; height: 40px;
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0; font-size: 16px; line-height: 1; flex: none;
+      margin-left: auto;   /* 推到最后，紧贴右上角 ☰ 旁边 */
+    }
+    .hdr-top #btnSettings .st-lbl { display: none; }
+    .hdr-top #btnSettings .st-ic { display: inline; }
+    .hdr-btns button { min-height: 34px; padding: 6px 3px; font-size: 11px; }
+
+    /* ② 角色卡缩小（真元/气血双条不动） */
+    #charPanel { padding: 6px 10px; }
+    .cp-avatar { font-size: 15px; }
+    .cp-name { font-size: 10px; }
+    .cp-tag { font-size: 8px; padding: 0 5px; }
+    .cp-row + .cp-row { margin-top: 4px; }
+
+    /* ③ 底部：随身 / 更多行动 / 自由输入缩小；【行动选项】不缩 */
+    .bar-toggle { padding: 6px 8px; font-size: 10px; margin-bottom: 6px; }
+    .hand-title { font-size: 9px; line-height: 24px; }
+    .hand-card { min-height: 34px; padding: 5px 9px; font-size: 10.5px; }
+    .more-toggle { padding: 6px 8px; font-size: 10px; }
+    .more-box .act-btn { min-height: 34px; padding: 7px 10px; font-size: 11px; }
+    #inputBar { gap: 6px; }
+    #inputBar input { min-height: 40px; padding: 7px 9px; }
+    #inputBar button { min-height: 40px; padding: 0 12px; }
+    footer { padding: 6px 10px calc(8px + env(safe-area-inset-bottom) + var(--kkb, 0px)); }
+    #actions { gap: 6px; margin-bottom: 6px; }
   }
 </style>
 </head>
@@ -754,12 +809,12 @@
 <header>
   <div class="hdr-top">
     <span class="title">蛊真人 · 可变全世界模拟器</span>
+    <button id="btnSettings"><span class="st-ic">⚙</span><span class="st-lbl">设置</span></button>
     <span class="badge" id="phaseBadge">开局</span>
   </div>
   <button class="hdr-toggle" id="hdrToggle" type="button" title="展开 / 收起功能菜单" aria-expanded="false">☰</button>
   <div class="hdr-btns" id="hdrBtns">
     <button id="btnSound" title="开关音效">🔊</button>
-    <button id="btnSettings">设置</button>
     <button id="btnNew">新开局</button>
     <button id="btnExport">导出存档</button>
     <button id="btnImport">导入存档</button>
