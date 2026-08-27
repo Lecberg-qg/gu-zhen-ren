@@ -357,8 +357,8 @@
   /* 角色卡折叠：手机默认收起，给剧情区让出空间；▾/▸ 切换 */
   .cp-toggle {
     background: transparent; border: none; color: #8f98a3;
-    font-size: 14px; line-height: 1; cursor: pointer;
-    padding: 4px 6px; border-radius: 6px; flex: none;
+    font-size: 13px; line-height: 1; cursor: pointer;
+    padding: 0 3px; border-radius: 6px; flex: none;
     transition: transform .2s, color .15s;
   }
   .cp-toggle:hover { color: #e8c56a; background: #1d242e; }
@@ -627,8 +627,8 @@
     header .badge { font-size: 11px; }
     header .hdr-toggle {
       display: inline-flex;
-      width: 40px; height: 40px;
-      font-size: 16px;
+      width: 20px; height: 20px;
+      font-size: 13px; padding: 0;
     }
     header .hdr-toggle.open { color: #e8c56a; border-color: #e8c56a; }
     .hdr-btns {
@@ -649,8 +649,8 @@
     /* 触摸目标 ≥40px + 按压反馈（手机上无 hover） */
     .trail-chip { min-height: 36px; display: inline-flex; align-items: center; padding: 6px 12px; }
     .hand-card { min-height: 40px; display: inline-flex; align-items: center; }
-    .cp-toggle { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
-    #charPanel.collapsed { padding: 6px 12px; }
+    .cp-toggle { min-width: 20px; min-height: 20px; display: inline-flex; align-items: center; justify-content: center; }
+    #charPanel.collapsed { padding: 3px 12px 5px; }
     .wiz-btn { min-height: 44px; padding: 10px 16px; }
     .panel .row button { min-height: 44px; padding: 10px 18px; }
     .act-btn { min-height: 44px; }
@@ -768,27 +768,36 @@
      目的：给剧情正文腾空间；行动选项【不缩】、真元/气血条【不缩】
      ============================================================ */
   @media (max-width: 760px) {
-    /* ① 设置按钮 → 右上角：按钮已直接写在标题行 HTML 里（游戏中徽章左边），无需 JS 搬移。
-          这里把它图标化（40×40），title 的 margin-right:auto 把它和徽章推到右侧，和 ☰ 同排 */
-    .hdr-top { flex: 1 1 auto; }
+    /* ① 设置按钮 → 右上角：图标化、对半砍到 20×20；☰ 同款 20×20。
+          header 上下内边距压到 4/3px，收掉与角色卡两行之间的纵向大空隙 */
+    .hdr-top { flex: 1 1 auto; gap: 6px; }
     header .title { font-size: 12.5px; }
     header .badge { font-size: 10px; }
+    header { gap: 4px; padding: calc(4px + env(safe-area-inset-top)) 10px calc(3px + env(safe-area-inset-bottom)); }
     .hdr-top #btnSettings {
-      width: 40px; height: 40px;
+      width: 20px; height: 20px;
       display: inline-flex; align-items: center; justify-content: center;
-      padding: 0; font-size: 16px; line-height: 1; flex: none;
+      padding: 0; font-size: 13px; line-height: 1; flex: none;
       margin-left: auto;   /* 推到最后，紧贴右上角 ☰ 旁边 */
     }
     .hdr-top #btnSettings .st-lbl { display: none; }
     .hdr-top #btnSettings .st-ic { display: inline; }
+    header .hdr-toggle { width: 20px; height: 20px; font-size: 13px; padding: 0; }
     .hdr-btns button { min-height: 34px; padding: 6px 3px; font-size: 11px; }
 
-    /* ② 角色卡缩小（真元/气血双条不动） */
-    #charPanel { padding: 6px 10px; }
+    /* ② 角色卡缩小：真元/气血双条再缩 15%（条高/文字/宽度）；名字左侧折叠钮收到 32；
+          charPanel 上内边距 3px，紧贴 header */
+    #charPanel { padding: 3px 10px 5px; }
     .cp-avatar { font-size: 15px; }
     .cp-name { font-size: 10px; }
     .cp-tag { font-size: 8px; padding: 0 5px; }
     .cp-row + .cp-row { margin-top: 4px; }
+    .cp-toggle { min-width: 20px; min-height: 20px; }
+    .cp-bars { width: 82px; gap: 3px; }
+    .cp-bars .cp-bar-label { font-size: 9px; }
+    .cp-bars .cp-bar { height: 4px; margin-top: 2px; }
+    #charPanel.collapsed .cp-bars { gap: 2px; }
+    #charPanel.collapsed .cp-bar { height: 3px; }
 
     /* ③ 底部：随身 / 更多行动 / 自由输入缩小；【行动选项】不缩 */
     .bar-toggle { padding: 6px 8px; font-size: 10px; margin-bottom: 6px; }
