@@ -1174,7 +1174,19 @@ function appendMsg(role, content, cls) {
   scrollBottom();
   return div;
 }
-function scrollBottom() { scene.scrollTop = scene.scrollHeight; }
+function scrollBottom() {
+  /* 瞬时贴底：关掉 smooth，避免流式刷新时反复触发平滑动画抽动 */
+  const prev = scene.style.scrollBehavior;
+  scene.style.scrollBehavior = "auto";
+  scene.scrollTop = scene.scrollHeight;
+  scene.style.scrollBehavior = prev;
+}
+/* 贴底跟随：贴底才跟随最新内容；往上回看旧剧情时不打扰 */
+let stickBottom = true;
+scene.addEventListener("scroll", () => {
+  stickBottom = scene.scrollTop + scene.clientHeight >= scene.scrollHeight - 24;
+});
+function followBottom() { if (stickBottom) scrollBottom(); }
 
 function renderAll() {
   scene.innerHTML = "";
@@ -1924,7 +1936,7 @@ function send(text, opts) {
   wait.className = "msg ai";
   wait.innerHTML = '<div class="label">◆ 模拟器</div><div class="body">' + esc(waitText) + '</div>';
   scene.appendChild(wait);
-  scrollBottom();
+  followBottom();
 
   const messages = [{ role: "system", content: SYSTEM_PROMPT }];
   if (ledgerHasData()) messages.push({ role: "system", content: ledgerContext() });
@@ -1942,7 +1954,7 @@ function send(text, opts) {
       bodyEl = aiDiv.querySelector(".body");
     } else {
       bodyEl.innerHTML = textToHtml(aiMsg.content);
-      scrollBottom();
+      followBottom();
     }
   }).then(() => {
     if (!bodyEl && wait.parentNode) wait.parentNode.removeChild(wait);
