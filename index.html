@@ -2231,7 +2231,27 @@ function parseSnapshot(text) {
   const b = body.indexOf("{");
   const e = body.lastIndexOf("}");
   if (b < 0 || e <= b) return null;
-  try { return JSON.parse(body.slice(b, e + 1)); } catch (err) { return null; }
+  let snap;
+  try { snap = JSON.parse(body.slice(b, e + 1)); } catch (err) { return null; }
+  /* 键名归一：AI 偶尔把快照写成英文键（trueQi/vitality/rank/worldStage…），
+     统一映射回中文键，否则整块快照被静默丢弃，血条/状态全冻结 */
+  const KEY = {
+    time: "时间", location: "地点", name: "姓名", identity: "身份",
+    rank: "修为", realm: "修为", trueQi: "真元", vitality: "气血", qi: "气血",
+    primevalStones: "元石", guWorms: "蛊虫", materials: "材料",
+    worldStage: "世界阶段", injury: "伤势", wounds: "伤势", reputation: "名声",
+    current: "当前", cur: "当前", max: "上限", limit: "上限"
+  };
+  const norm = (o) => {
+    if (Array.isArray(o)) return o.map(norm);
+    if (o && typeof o === "object") {
+      const out = {};
+      for (const [k, v] of Object.entries(o)) out[KEY[k] || k] = norm(v);
+      return out;
+    }
+    return o;
+  };
+  return norm(snap);
 }
 
 /* 硬校验 + 合并：非法字段保留旧值，返回被拒绝字段列表 + 前后差值 */
