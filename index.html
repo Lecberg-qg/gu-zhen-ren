@@ -1749,7 +1749,7 @@ function appendMsg(role, content, cls) {
     div.appendChild(label);
     const body = document.createElement("div");
     body.className = "body";
-    body.innerHTML = aiBodyHtml(content);
+    body.innerHTML = aiBodyHtml(String(content == null ? "" : content));
     div.appendChild(body);
   }
   scene.appendChild(div);
@@ -1855,16 +1855,20 @@ function renderActions() {
     b.innerHTML = '<span class="act-ic">🧭</span><span>打开开局向导</span>';
     b.addEventListener("click", openWizard);
     actionsEl.appendChild(b);
-  } else {
-    const raw = lastRawAi || ((state.history.filter(m => m.role === "assistant").pop() || {}).content || "");
+    return;
+  }
+  /* 行动选项永不消失：任何异常都不允许让底部空白，兜底到「继续探索」 */
+  try {
+    const raw = String(lastRawAi || ((state.history.filter(m => m.role === "assistant").pop() || {}).content || "") || "");
     const acts = extractActions(raw);
     /* 兜底行动：有 AI 选项时是快捷工具，没选项时按剧情智能兜底 */
     const fallback = acts.length ? utilityActions() : smartFallbackActions(raw);
-    /* 行动选项卡永不消失：AI 的【行动选项】优先；没有就用兜底行动填进去。
-       折叠条（默认收起，不挡剧情）点开展示按钮，是唯一行动入口 */
     const actionBtns = acts.length ? acts : fallback;
     if (actionBtns.length) actionsEl.appendChild(actToggle(actionBtns));
     if (acts.length && fallback.length) actionsEl.appendChild(moreToggle(fallback));
+  } catch (err) {
+    /* 兜底：解析/渲染异常也不让选项卡消失 */
+    actionsEl.appendChild(actToggle(["继续探索"]));
   }
 }
 
@@ -2224,15 +2228,19 @@ function ledgerHasData() {
 
 /* 从 AI 回复提取【状态快照】并解析为对象；找不到或解析失败返回 null */
 function parseSnapshot(text) {
+  text = String(text == null ? "" : text);
   const idx = text.lastIndexOf("【状态快照】");
   if (idx < 0) return null;
   let body = text.slice(idx + "【状态快照】".length).trim();
   body = body.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  let snap = null;
   const b = body.indexOf("{");
   const e = body.lastIndexOf("}");
-  if (b < 0 || e <= b) return null;
-  let snap;
-  try { snap = JSON.parse(body.slice(b, e + 1)); } catch (err) { return null; }
+  if (b >= 0 && e > b) {
+    try { snap = JSON.parse(body.slice(b, e + 1)); } catch (err) { snap = null; }
+  }
+  if (!snap) snap = looseParseSnapshot(body);   /* AI 不按 JSON 输出时，用正则提取关键字段 */
+  if (!snap || typeof snap !== "object") return null;
   /* 键名归一：AI 偶尔把快照写成英文键（trueQi/vitality/rank/worldStage…），
      统一映射回中文键，否则整块快照被静默丢弃，血条/状态全冻结 */
   const KEY = {
@@ -2254,6 +2262,39 @@ function parseSnapshot(text) {
   return norm(snap);
 }
 
+/* 宽松文本快照：AI 不按 JSON 输出时（如「时间：x\n真元：30/100\n气血：100/100」），
+   用正则逐行提取关键字段，避免整块快照被丢弃导致面板冻结 */
+function looseParseSnapshot(body) {
+  const field = (label) => {
+    const m = body.match(new RegExp("(?:^|\\n)\\s*(?:" + label + ")\\s*[:：]\\s*([^\\n【】]{1,80})"));
+    return m ? m[1].trim() : undefined;
+  };
+  const num = (label) => {
+    const m = body.match(new RegExp("(?:^|\\n)\\s*(?:" + label + ")\\s*[:：]\\s*(\\d+)"));
+    return m ? Number(m[1]) : undefined;
+  };
+  const bar = (label) => {
+    const m = body.match(new RegExp("(?:^|\\n)\\s*(?:" + label + ")\\s*[:：]\\s*(\\d+)\\s*[/／]\\s*(\\d+)"));
+    return m ? { "当前": Number(m[1]), "上限": Number(m[2]) } : undefined;
+  };
+  const snap = {};
+  for (const k of ["时间", "地点", "姓名", "身份", "修为", "伤势", "名声", "世界阶段"]) {
+    const v = field(k);
+    if (v) snap[k] = v;
+  }
+  const z = bar("真元|仙元") || (function () { const n = num("真元|仙元"); return n !== undefined ? { "当前": n } : undefined; })();
+  if (z) snap["真元"] = z;
+  const q = bar("气血") || (function () { const n = num("气血"); return n !== undefined ? { "当前": n } : undefined; })();
+  if (q) snap["气血"] = q;
+  const y = num("元石|仙元石");
+  if (y !== undefined) snap["元石"] = y;
+  for (const k of ["蛊虫", "材料"]) {
+    const v = field(k);
+    if (v) snap[k] = v.split(/[、,，]/).map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+  return Object.keys(snap).length ? snap : null;
+}
+
 /* 硬校验 + 合并：非法字段保留旧值，返回被拒绝字段列表 + 前后差值 */
 function applySnapshot(snap) {
   const cur = Object.assign({}, ledger);
@@ -2266,6 +2307,19 @@ function applySnapshot(snap) {
   const isNum = (v) => typeof v === "number" && isFinite(v);
   const isStr = (v) => typeof v === "string";
   const isArr = (v) => Array.isArray(v);
+  /* 数值条解析：兼容对象 {当前,上限} / 字符串 "30/100" / 纯数字 30 / "30"（上限沿用旧值） */
+  const parseBar = (v) => {
+    if (v && typeof v === "object") return { c: v["当前"], m: v["上限"] };
+    if (typeof v === "string") {
+      const s = v.trim();
+      const m = s.match(/^(\d+)\s*[/／]\s*(\d+)$/);
+      if (m) return { c: Number(m[1]), m: Number(m[2]) };
+      const n = Number(s);
+      if (s !== "" && !isNaN(n)) return { c: n, m: undefined };
+    }
+    if (typeof v === "number") return { c: v, m: undefined };
+    return null;
+  };
 
   if (isStr(snap["时间"])) cur.time = snap["时间"];
   if (isStr(snap["地点"])) {
@@ -2282,15 +2336,21 @@ function applySnapshot(snap) {
   if (isArr(snap["蛊虫"])) cur.gu = snap["蛊虫"].map(String);
   if (isArr(snap["材料"])) cur.materials = snap["材料"].map(String);
 
-  if (snap["真元"] && typeof snap["真元"] === "object") {
-    const c = snap["真元"]["当前"], m = snap["真元"]["上限"];
-    if (isNum(c) && isNum(m) && m >= 0 && c >= 0 && c <= m) { cur.zhenCur = c; cur.zhenMax = m; cur.zhenKnown = true; }
-    else rejected.push("真元");
+  if (snap["真元"] != null) {
+    const p = parseBar(snap["真元"]);
+    if (p && isNum(p.c) && p.c >= 0 && (p.m === undefined ? cur.zhenMax : isNum(p.m) && p.m >= 0)) {
+      if (isNum(p.m)) cur.zhenMax = p.m;
+      cur.zhenCur = Math.min(p.c, cur.zhenMax > 0 ? cur.zhenMax : p.c);
+      cur.zhenKnown = true;
+    } else rejected.push("真元");
   }
-  if (snap["气血"] && typeof snap["气血"] === "object") {
-    const c = snap["气血"]["当前"], m = snap["气血"]["上限"];
-    if (isNum(c) && isNum(m) && m >= 0 && c >= 0 && c <= m) { cur.qiCur = c; cur.qiMax = m; cur.qiKnown = true; }
-    else rejected.push("气血");
+  if (snap["气血"] != null) {
+    const p = parseBar(snap["气血"]);
+    if (p && isNum(p.c) && p.c >= 0 && (p.m === undefined ? cur.qiMax : isNum(p.m) && p.m >= 0)) {
+      if (isNum(p.m)) cur.qiMax = p.m;
+      cur.qiCur = Math.min(p.c, cur.qiMax > 0 ? cur.qiMax : p.c);
+      cur.qiKnown = true;
+    } else rejected.push("气血");
   }
   if (snap["元石"] !== undefined) {
     if (isNum(snap["元石"]) && snap["元石"] >= 0) cur.yuan = snap["元石"];
